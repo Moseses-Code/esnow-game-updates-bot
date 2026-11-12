@@ -47,12 +47,21 @@ class MonitorTests(unittest.TestCase):
         d={'data':{'1':{'common':{'releasestate':'released'},'depots':{'branches':{'public':{'buildid':'42'},'beta':{'buildid':'99'}}}}}}
         with patch.object(bot,'get_json',return_value=d):self.assertEqual(bot.read_version(self.g),'42')
     def test_outbox_restarts_no_repeat_when_confirmed(self):
-        with self.c:self.c.execute('INSERT INTO outbox(slot,parts) VALUES (?,?)',(1,json.dumps(['one','two'])))
+        with self.c:
+            self.c.execute('INSERT INTO outbox(slot,parts) VALUES (?,?)',(1,json.dumps(['one','two'])))
+            self.c.execute('INSERT INTO subscribers VALUES (?,?,?,?)',(42,0,None,None))
         with patch.object(bot,'send',side_effect=[None,RuntimeError()]):
-            with self.assertRaises(RuntimeError):bot.deliver(self.c,{})
+            bot.deliver(self.c,{})
         with patch.object(bot,'send') as send:
             bot.deliver(self.c,{})
-            send.assert_called_once_with({},'two')
+            send.assert_called_once_with({},42,'two')
+        with patch.object(bot,'send') as send:
+            bot.deliver(self.c,{})
+            send.assert_not_called()
+    def test_new_subscriber_does_not_receive_old_report(self):
+        with self.c:
+            self.c.execute('INSERT INTO outbox(slot,parts) VALUES (?,?)',(1,json.dumps(['old'])))
+            self.c.execute('INSERT INTO subscribers VALUES (?,?,?,?)',(42,2,None,None))
         with patch.object(bot,'send') as send:
             bot.deliver(self.c,{})
             send.assert_not_called()

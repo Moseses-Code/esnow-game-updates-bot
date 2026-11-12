@@ -8,7 +8,6 @@ import logging
 from logging.handlers import RotatingFileHandler
 import os
 from pathlib import Path
-import secrets
 import socket
 import sqlite3
 import sys
@@ -95,6 +94,10 @@ def connect(path=None):
         CREATE TABLE IF NOT EXISTS gaps(start REAL, end REAL);
         CREATE TABLE IF NOT EXISTS outbox(slot REAL PRIMARY KEY, parts TEXT, next INTEGER DEFAULT 0,
             sent INTEGER DEFAULT 0);
+        CREATE TABLE IF NOT EXISTS subscribers(chat_id INTEGER PRIMARY KEY, started REAL,
+            username TEXT, first_name TEXT);
+        CREATE TABLE IF NOT EXISTS deliveries(slot REAL, chat_id INTEGER, next INTEGER DEFAULT 0,
+            sent INTEGER DEFAULT 0, PRIMARY KEY(slot, chat_id));
     ''')
     return c
 
@@ -213,9 +216,9 @@ MENU = {
 }
 
 
-def send(config, text):
+def send(config, chat_id, text):
     telegram(config, 'sendMessage', {
-        'chat_id': config['chat_id'], 'text': text, 'reply_markup': MENU})
+        'chat_id': chat_id, 'text': text, 'reply_markup': MENU})
 
 
 def queue_reports(c, games, now):
@@ -231,45 +234,45 @@ def queue_reports(c, games, now):
 
 
 def deliver(c, config):
-    for r in c.execute('SELECT * FROM outbox WHERE sent=0 ORDER BY slot').fetchall():
+    for r in c.execute('SELECT * FROM outbox ORDER BY slot').fetchall():
         parts = json.loads(r['parts'])
-        for i in range(r['next'], len(parts)):
-            send(config, parts[i])
+        subscribers = c.execute('SELECT chat_id FROM subscribers WHERE started<=?', (r['slot'],)).fetchall()
+        for user in subscribers:
             with c:
-                c.execute('UPDATE outbox SET next=? WHERE slot=?', (i + 1, r['slot']))
-        with c:
-            c.execute('UPDATE outbox SET sent=1 WHERE slot=?', (r['slot'],))
+                c.execute('INSERT OR IGNORE INTO deliveries(slot,chat_id) VALUES (?,?)',
+                          (r['slot'], user['chat_id']))
+        pending = c.execute('SELECT * FROM deliveries WHERE slot=? AND sent=0', (r['slot'],)).fetchall()
+        for delivery in pending:
+            try:
+                for i in range(delivery['next'], len(parts)):
+                    send(config, delivery['chat_id'], parts[i])
+                    with c:
+                        c.execute('UPDATE deliveries SET next=? WHERE slot=? AND chat_id=?',
+                                  (i + 1, r['slot'], delivery['chat_id']))
+                with c:
+                    c.execute('UPDATE deliveries SET sent=1 WHERE slot=? AND chat_id=?',
+                              (r['slot'], delivery['chat_id']))
+            except Exception as e:
+                logging.warning('Delivery to subscriber failed: %s', type(e).__name__)
 
 
 def setup():
-    print('ESnow: привязка личного чата. Токен хранится только на этом компьютере.')
+    print('ESnow: открытый бот. Токен хранится только на этом компьютере.')
     token = getpass.getpass('Введите токен от BotFather (ввод скрыт): ').strip()
     config = {'token': token}
     me = telegram(config, 'getMe', {})
-    code = secrets.token_hex(8)
     print('Откройте https://t.me/' + me['username'])
-    print('Отправьте боту: /start ' + code)
-    offset = 0
-    deadline = time.time() + 600
-    while time.time() < deadline:
-        updates = telegram(config, 'getUpdates', {'offset': offset, 'timeout': 15, 'allowed_updates': ['message']})
-        for u in updates:
-            offset = u['update_id'] + 1
-            m = u.get('message', {})
-            if m.get('chat', {}).get('type') == 'private' and m.get('text', '').strip() == '/start ' + code:
-                config['chat_id'] = m['chat']['id']
-                p = ROOT / 'settings.json'
-                p.write_text(json.dumps(config, indent=2), encoding='utf-8')
-                if os.name != 'nt':
-                    p.chmod(0o600)
-                c = connect()
-                with c:
-                    put(c, 'offset', offset)
-                c.close()
-                send(config, 'ESnow: чат привязан. После запуска программы сводки будут приходить в 08:30 и 20:30 МСК. Первый обход сохранит базовые версии; прошлые обновления неизвестны. Кнопка «Проверить обновления» запускает внеочередную проверку, «Опубликовать сводку» отправляет сводку за текущую смену.')
-                print('Готово. Запустите RUN.cmd и проверьте /status после первого обхода.')
-                return
-    raise RuntimeError('Время привязки истекло. Запустите SETUP.cmd ещё раз.')
+    print('Установка завершена. Любой пользователь может открыть эту ссылку и нажать /start.')
+    p = ROOT / 'settings.json'
+    p.write_text(json.dumps(config, indent=2), encoding='utf-8')
+    if os.name != 'nt':
+        p.chmod(0o600)
+    c = connect()
+    updates = telegram(config, 'getUpdates', {'timeout': 0, 'allowed_updates': ['message']})
+    with c:
+        if updates:
+            put(c, 'offset', max(x['update_id'] for x in updates) + 1)
+    c.close()
 
 
 def main():
@@ -294,8 +297,8 @@ def main():
         put(c, 'heartbeat', now)
     last_poll = 0
     last_scan = float(meta(c, 'last_scan', 0))
-    last_manual = 0
-    manual_report_after_scan = False
+    last_manual = {}
+    manual_report_after_scan = set()
     # Scan in a worker so reporting and Telegram stay responsive during network failures.
     pool = concurrent.futures.ThreadPoolExecutor(max_workers=1)
     future = None
@@ -315,15 +318,16 @@ def main():
                 last_scan = time.time()
                 logging.info('Scan finished')
                 if manual_report_after_scan:
-                    manual_report_after_scan = False
-                    for part in split_text(report(c, games, boundary(last_scan), last_scan)):
-                        send(config, part)
+                    for chat_id in manual_report_after_scan:
+                        for part in split_text(report(c, games, boundary(last_scan), last_scan)):
+                            send(config, chat_id, part)
+                    manual_report_after_scan.clear()
             except Exception as e:
                 logging.error('Scan failed: %s', type(e).__name__)
                 last_scan = time.time() - INTERVAL + 60
-                if manual_report_after_scan:
-                    manual_report_after_scan = False
-                    send(config, 'Внеочередная проверка не завершилась. Повторите кнопку через минуту.')
+                for chat_id in manual_report_after_scan:
+                    send(config, chat_id, 'Внеочередная проверка не завершилась. Повторите кнопку через минуту.')
+                manual_report_after_scan.clear()
             future = None
         if future is None and now - last_scan >= INTERVAL:
             future = pool.submit(background_scan)
@@ -336,24 +340,32 @@ def main():
                 updates = telegram(config, 'getUpdates', {'offset': offset, 'timeout': 0, 'allowed_updates': ['message']})
                 for u in updates:
                     m = u.get('message', {})
-                    if m.get('chat', {}).get('id') == config['chat_id'] and m.get('chat', {}).get('type') == 'private':
+                    if m.get('chat', {}).get('type') == 'private':
+                        chat_id = m['chat']['id']
                         cmd = m.get('text', '').split('@')[0].strip()
-                        if cmd in ('/start', '/status') and now - last_manual > 5:
-                            last_manual = now
+                        if cmd == '/start':
+                            with c:
+                                c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
+                                          (chat_id, now, m.get('from', {}).get('username'), m.get('from', {}).get('first_name')))
+                            send(config, chat_id, 'ESnow: вы подписаны на сводки в 08:30 и 20:30 МСК. Кнопки ниже позволяют запросить сводку в любое время.')
+                        elif not c.execute('SELECT 1 FROM subscribers WHERE chat_id=?', (chat_id,)).fetchone():
+                            send(config, chat_id, 'Нажмите /start, чтобы подписаться на сводки ESnow.')
+                        elif cmd in ('/status',) and now - last_manual.get(chat_id, 0) > 5:
+                            last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
-                            send(config, f'ESnow работает. МСК: {dt.datetime.now(MSK):%d.%m %H:%M}. Свежие данные: {rows}/{len(games)}. Сводки 08:30 и 20:30. /report — текущая сводка. Первый обход может занять несколько минут.')
-                        elif cmd in ('/report', 'Опубликовать сводку') and now - last_manual > 10:
-                            last_manual = now
+                            send(config, chat_id, f'ESnow работает. МСК: {dt.datetime.now(MSK):%d.%m %H:%M}. Свежие данные: {rows}/{len(games)}. Подписчиков: {c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}. Сводки 08:30 и 20:30.')
+                        elif cmd in ('/report', 'Опубликовать сводку') and now - last_manual.get(chat_id, 0) > 10:
+                            last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
-                                send(config, part)
-                        elif cmd == 'Проверить обновления' and now - last_manual > 5:
-                            last_manual = now
+                                send(config, chat_id, part)
+                        elif cmd == 'Проверить обновления' and now - last_manual.get(chat_id, 0) > 5:
+                            last_manual[chat_id] = now
+                            manual_report_after_scan.add(chat_id)
                             if future is None:
-                                manual_report_after_scan = True
                                 future = pool.submit(background_scan)
-                                send(config, 'Запускаю внеочередную проверку. Сводка придёт после завершения.')
+                                send(config, chat_id, 'Запускаю внеочередную проверку. Сводка придёт после завершения.')
                             else:
-                                send(config, 'Проверка уже выполняется. Сводка придёт после её завершения.')
+                                send(config, chat_id, 'Проверка уже выполняется. Сводка придёт после её завершения.')
                     with c:
                         put(c, 'offset', u['update_id'] + 1)
         except Exception as e:
