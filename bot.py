@@ -201,10 +201,12 @@ def telegram(config, method, payload):
 
 
 MENU = {
-    'inline_keyboard': [
-        [{'text': 'Проверить обновления', 'icon_custom_emoji_id': '5429571366384842791', 'callback_data': 'check_updates', 'style': 'success'}],
-        [{'text': 'Сообщить об обновлении ❗', 'callback_data': 'publish_report'}],
+    'keyboard': [
+        [{'text': 'Проверить обновления', 'icon_custom_emoji_id': '5429571366384842791', 'style': 'success'}],
+        [{'text': 'Сообщить об обновлении ❗'}],
     ],
+    'resize_keyboard': True,
+    'is_persistent': True,
 }
 
 
@@ -343,14 +345,6 @@ def main():
                             with c:
                                 c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
                                           (chat_id, now, m.get('from', {}).get('username'), m.get('from', {}).get('first_name')))
-                            if meta(c, 'keyboard_removed_' + str(chat_id)) != '1':
-                                cleanup = telegram(config, 'sendMessage', {'chat_id': chat_id, 'text': 'Обновляю меню…', 'reply_markup': {'remove_keyboard': True}})
-                                with c:
-                                    put(c, 'keyboard_removed_' + str(chat_id), '1')
-                                try:
-                                    telegram(config, 'deleteMessage', {'chat_id': chat_id, 'message_id': cleanup['message_id']})
-                                except Exception:
-                                    pass
                             if not already:
                                 send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nОтчёт: <b>08:30 и 20:30 МСК</b>.\nПроверка и сводка — кнопками ниже.')
                             elif now - last_manual.get(chat_id, 0) > 10:
@@ -362,11 +356,11 @@ def main():
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
                             send(config, chat_id, f'<b>🟢 ESnow Updates работает</b>\n\nВремя: <b>{dt.datetime.now(MSK):%d.%m %H:%M} МСК</b>\nСвежие проверки: <b>{rows}/{len(games)}</b>\nПодписчиков: <b>{c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}</b>\n\nОтчёты: <b>08:30</b> и <b>20:30</b>.')
-                        elif cmd in ('/report', 'publish_report') and now - last_manual.get(chat_id, 0) > 10:
+                        elif cmd in ('/report', 'publish_report', 'Сообщить об обновлении ❗') and now - last_manual.get(chat_id, 0) > 10:
                             last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
                                 send(config, chat_id, part)
-                        elif cmd == 'check_updates' and now - last_manual.get(chat_id, 0) > 5:
+                        elif cmd in ('check_updates', 'Проверить обновления') and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             manual_report_after_scan.add(chat_id)
                             if future is None:
