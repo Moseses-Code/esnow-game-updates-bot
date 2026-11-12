@@ -1,0 +1,860 @@
+[
+  {
+    "name": "Albion Online",
+    "launcher": "Albion Launcher",
+    "id": "game-001",
+    "source": "albion"
+  },
+  {
+    "name": "Warface",
+    "launcher": "Astrum Play",
+    "id": "game-002",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Hearthstone",
+    "launcher": "Battle.net",
+    "id": "game-003",
+    "source": "battle",
+    "product": "hsb",
+    "region": "eu"
+  },
+  {
+    "name": "Heroes of the Storm",
+    "launcher": "Battle.net",
+    "id": "game-004",
+    "source": "battle",
+    "product": "hero",
+    "region": "eu"
+  },
+  {
+    "name": "Overwatch 2",
+    "launcher": "Battle.net",
+    "id": "game-005",
+    "source": "battle",
+    "product": "pro",
+    "region": "eu"
+  },
+  {
+    "name": "StarCraft 2: Wings of Liberty",
+    "launcher": "Battle.net",
+    "id": "game-006",
+    "source": "battle",
+    "product": "s2",
+    "region": "eu"
+  },
+  {
+    "name": "Escape from Tarkov",
+    "launcher": "BSG",
+    "id": "game-007",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Escape from Tarkov Arena",
+    "launcher": "BSG",
+    "id": "game-008",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Apex Legends",
+    "launcher": "EA App",
+    "id": "game-009",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Fortnite",
+    "launcher": "Epic Games",
+    "id": "game-010",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Rocket League",
+    "launcher": "Epic Games",
+    "id": "game-011",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Sid Meier's Civilization 6",
+    "launcher": "Epic Games",
+    "id": "game-012",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "World War Z",
+    "launcher": "Epic Games",
+    "id": "game-013",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Genshin Impact",
+    "launcher": "HoYoPlay",
+    "id": "game-014",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Minecraft: Java Edition",
+    "launcher": "Legacy",
+    "id": "game-015",
+    "source": "minecraft"
+  },
+  {
+    "name": "Мир кораблей",
+    "launcher": "Lesta",
+    "id": "game-016",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Мир танков",
+    "launcher": "Lesta",
+    "id": "game-017",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Tanks Blitz",
+    "launcher": "Lesta",
+    "id": "game-018",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "MAJESTIC",
+    "launcher": "MAJESTIC",
+    "id": "game-019",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "OSU",
+    "launcher": "OSU",
+    "id": "game-020",
+    "source": "osu"
+  },
+  {
+    "name": "League of Legends",
+    "launcher": "Riot Client",
+    "id": "game-021",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Legends of Runeterra",
+    "launcher": "Riot Client",
+    "id": "game-022",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Valorant",
+    "launcher": "Riot Client",
+    "id": "game-023",
+    "reason": "источник версии пока не подключён"
+  },
+  {
+    "name": "Roblox",
+    "launcher": "Roblox",
+    "id": "game-024",
+    "source": "roblox"
+  },
+  {
+    "name": "Albion Online",
+    "launcher": "Steam",
+    "appid": 761890,
+    "id": "game-025",
+    "source": "steam"
+  },
+  {
+    "name": "Apex Legends",
+    "launcher": "Steam",
+    "id": "game-026",
+    "appid": 1172470,
+    "source": "steam"
+  },
+  {
+    "name": "Arena Breakout: Infinite",
+    "launcher": "Steam",
+    "appid": 2073620,
+    "id": "game-027",
+    "source": "steam"
+  },
+  {
+    "name": "Brawlhalla",
+    "launcher": "Steam",
+    "appid": 291550,
+    "id": "game-028",
+    "source": "steam"
+  },
+  {
+    "name": "Call of Duty: Warzone 2",
+    "launcher": "Steam",
+    "id": "game-029",
+    "appid": 1938090,
+    "source": "steam"
+  },
+  {
+    "name": "Counter-Strike 2",
+    "launcher": "Steam",
+    "appid": 730,
+    "id": "game-030",
+    "source": "steam"
+  },
+  {
+    "name": "Crossout",
+    "launcher": "Steam",
+    "id": "game-031",
+    "appid": 386180,
+    "source": "steam"
+  },
+  {
+    "name": "Deadlock",
+    "launcher": "Steam",
+    "id": "game-032",
+    "appid": 1422450,
+    "source": "steam"
+  },
+  {
+    "name": "Deceit 2",
+    "launcher": "Steam",
+    "appid": 2064870,
+    "id": "game-033",
+    "source": "steam"
+  },
+  {
+    "name": "Delta Force",
+    "launcher": "Steam",
+    "appid": 2507950,
+    "id": "game-034",
+    "source": "steam"
+  },
+  {
+    "name": "Destiny 2",
+    "launcher": "Steam",
+    "appid": 1085660,
+    "id": "game-035",
+    "source": "steam"
+  },
+  {
+    "name": "Dota 2",
+    "launcher": "Steam",
+    "appid": 570,
+    "id": "game-036",
+    "source": "steam"
+  },
+  {
+    "name": "NieR: Automata",
+    "launcher": "Steam",
+    "id": "game-037",
+    "appid": 524220,
+    "source": "steam"
+  },
+  {
+    "name": "Palworld",
+    "launcher": "Steam",
+    "appid": 1623730,
+    "id": "game-038",
+    "source": "steam"
+  },
+  {
+    "name": "PAYDAY 2",
+    "launcher": "Steam",
+    "appid": 218620,
+    "id": "game-039",
+    "source": "steam"
+  },
+  {
+    "name": "Phasmophobia",
+    "launcher": "Steam",
+    "appid": 739630,
+    "id": "game-040",
+    "source": "steam"
+  },
+  {
+    "name": "Rust",
+    "launcher": "Steam",
+    "appid": 252490,
+    "id": "game-041",
+    "source": "steam"
+  },
+  {
+    "name": "Valheim",
+    "launcher": "Steam",
+    "appid": 892970,
+    "id": "game-042",
+    "source": "steam"
+  },
+  {
+    "name": "Warhammer 40,000: Space Marine II",
+    "launcher": "Steam",
+    "id": "game-043",
+    "appid": 2183900,
+    "source": "steam"
+  },
+  {
+    "name": "Escape from Tarkov",
+    "launcher": "Steam",
+    "appid": 3932890,
+    "id": "game-044",
+    "source": "steam"
+  },
+  {
+    "name": "Gears of War E-Day",
+    "launcher": "Steam",
+    "appid": 3010850,
+    "id": "game-045",
+    "source": "steam"
+  },
+  {
+    "name": "Portal 2",
+    "launcher": "Steam",
+    "appid": 620,
+    "id": "game-046",
+    "source": "steam"
+  },
+  {
+    "name": "Raft",
+    "launcher": "Steam",
+    "appid": 648800,
+    "id": "game-047",
+    "source": "steam"
+  },
+  {
+    "name": "The Witcher 3: Wild Hunt",
+    "launcher": "Steam",
+    "id": "game-048",
+    "appid": 292030,
+    "source": "steam"
+  },
+  {
+    "name": "A Way Out",
+    "launcher": "Steam",
+    "appid": 1222700,
+    "id": "game-049",
+    "source": "steam"
+  },
+  {
+    "name": "Battlefield 1",
+    "launcher": "Steam",
+    "id": "game-050",
+    "appid": 1238840,
+    "source": "steam"
+  },
+  {
+    "name": "Battlefield 2042",
+    "launcher": "Steam",
+    "id": "game-051",
+    "appid": 1517290,
+    "source": "steam"
+  },
+  {
+    "name": "Battlefield 4",
+    "launcher": "Steam",
+    "id": "game-052",
+    "appid": 1238860,
+    "source": "steam"
+  },
+  {
+    "name": "Battlefield 6",
+    "launcher": "Steam",
+    "id": "game-053",
+    "appid": 2807960,
+    "source": "steam"
+  },
+  {
+    "name": "Battlefield V",
+    "launcher": "Steam",
+    "id": "game-054",
+    "appid": 1238810,
+    "source": "steam"
+  },
+  {
+    "name": "Burnout Paradise Remastered",
+    "launcher": "Steam",
+    "id": "game-055",
+    "appid": 1238080,
+    "source": "steam"
+  },
+  {
+    "name": "Command & Conquer: Red Alert 3",
+    "launcher": "Steam",
+    "id": "game-056",
+    "appid": 17480,
+    "source": "steam"
+  },
+  {
+    "name": "Dead Space (2023)",
+    "launcher": "Steam",
+    "id": "game-057",
+    "appid": 1693980,
+    "source": "steam"
+  },
+  {
+    "name": "DIRT 5",
+    "launcher": "Steam",
+    "appid": 1038250,
+    "id": "game-058",
+    "source": "steam"
+  },
+  {
+    "name": "Dragon Age: Inquisition",
+    "launcher": "Steam",
+    "id": "game-059",
+    "appid": 1222690,
+    "source": "steam"
+  },
+  {
+    "name": "EA SPORTS FC™ 26",
+    "launcher": "Steam",
+    "appid": 3405690,
+    "id": "game-060",
+    "source": "steam"
+  },
+  {
+    "name": "GRID Legends",
+    "launcher": "Steam",
+    "appid": 1307710,
+    "id": "game-061",
+    "source": "steam"
+  },
+  {
+    "name": "It Takes Two",
+    "launcher": "Steam",
+    "appid": 1426210,
+    "id": "game-062",
+    "source": "steam"
+  },
+  {
+    "name": "Lost in Random",
+    "launcher": "Steam",
+    "id": "game-063",
+    "appid": 1462570,
+    "source": "steam"
+  },
+  {
+    "name": "Mass Effect Legendary Edition",
+    "launcher": "Steam",
+    "id": "game-064",
+    "appid": 1328670,
+    "source": "steam"
+  },
+  {
+    "name": "Mass Effect: Andromeda",
+    "launcher": "Steam",
+    "id": "game-065",
+    "appid": 1238000,
+    "source": "steam"
+  },
+  {
+    "name": "Mirror's Edge Catalyst",
+    "launcher": "Steam",
+    "id": "game-066",
+    "appid": 1233570,
+    "source": "steam"
+  },
+  {
+    "name": "Need for Speed: Heat",
+    "launcher": "Steam",
+    "id": "game-067",
+    "appid": 1222680,
+    "source": "steam"
+  },
+  {
+    "name": "Need for Speed: Hot Pursuit Remastered",
+    "launcher": "Steam",
+    "id": "game-068",
+    "appid": 1328660,
+    "source": "steam"
+  },
+  {
+    "name": "Need for Speed: Most Wanted (2012)",
+    "launcher": "Steam",
+    "id": "game-069",
+    "appid": 1262560,
+    "source": "steam"
+  },
+  {
+    "name": "Need for Speed: Unbound",
+    "launcher": "Steam",
+    "id": "game-070",
+    "appid": 1846380,
+    "source": "steam"
+  },
+  {
+    "name": "Star Wars Jedi: Fallen Order",
+    "launcher": "Steam",
+    "id": "game-071",
+    "appid": 1172380,
+    "source": "steam"
+  },
+  {
+    "name": "Star Wars Jedi: Survivor",
+    "launcher": "Steam",
+    "id": "game-072",
+    "appid": 1774580,
+    "source": "steam"
+  },
+  {
+    "name": "Star Wars: Battlefront II (2017)",
+    "launcher": "Steam",
+    "id": "game-073",
+    "appid": 1237950,
+    "source": "steam"
+  },
+  {
+    "name": "Titanfall 2",
+    "launcher": "Steam",
+    "appid": 1237970,
+    "id": "game-074",
+    "source": "steam"
+  },
+  {
+    "name": "Unravel",
+    "launcher": "Steam",
+    "appid": 1225560,
+    "id": "game-075",
+    "source": "steam"
+  },
+  {
+    "name": "Unravel Two",
+    "launcher": "Steam",
+    "appid": 1225570,
+    "id": "game-076",
+    "source": "steam"
+  },
+  {
+    "name": "007 First Light",
+    "launcher": "Steam",
+    "appid": 3768760,
+    "id": "game-077",
+    "source": "steam"
+  },
+  {
+    "name": "Abiotic Factor",
+    "launcher": "Steam",
+    "appid": 427410,
+    "id": "game-078",
+    "source": "steam"
+  },
+  {
+    "name": "ARC Raiders",
+    "launcher": "Steam",
+    "appid": 1808500,
+    "id": "game-079",
+    "source": "steam"
+  },
+  {
+    "name": "Assassin's Creed Odyssey",
+    "launcher": "Steam",
+    "appid": 812140,
+    "id": "game-080",
+    "source": "steam"
+  },
+  {
+    "name": "Assassin's Creed Shadows",
+    "launcher": "Steam",
+    "appid": 3159330,
+    "id": "game-081",
+    "source": "steam"
+  },
+  {
+    "name": "Assassin’s Creed Unity",
+    "launcher": "Steam",
+    "appid": 289650,
+    "id": "game-082",
+    "source": "steam"
+  },
+  {
+    "name": "Assassin's Creed Valhalla",
+    "launcher": "Steam",
+    "appid": 2208920,
+    "id": "game-083",
+    "source": "steam"
+  },
+  {
+    "name": "Backrooms: Escape Together",
+    "launcher": "Steam",
+    "appid": 2141730,
+    "id": "game-084",
+    "source": "steam"
+  },
+  {
+    "name": "BeamNG.drive",
+    "launcher": "Steam",
+    "appid": 284160,
+    "id": "game-085",
+    "source": "steam"
+  },
+  {
+    "name": "Bodycam",
+    "launcher": "Steam",
+    "appid": 2406770,
+    "id": "game-086",
+    "source": "steam"
+  },
+  {
+    "name": "Buckshot Roulette",
+    "launcher": "Steam",
+    "appid": 2835570,
+    "id": "game-087",
+    "source": "steam"
+  },
+  {
+    "name": "Chained Together",
+    "launcher": "Steam",
+    "appid": 2567870,
+    "id": "game-088",
+    "source": "steam"
+  },
+  {
+    "name": "Clair Obscur: Expedition 33",
+    "launcher": "Steam",
+    "appid": 1903340,
+    "id": "game-089",
+    "source": "steam"
+  },
+  {
+    "name": "Content Warning",
+    "launcher": "Steam",
+    "appid": 2881650,
+    "id": "game-090",
+    "source": "steam"
+  },
+  {
+    "name": "Dying Light 2: Stay Human",
+    "launcher": "Steam",
+    "id": "game-091",
+    "appid": 534380,
+    "source": "steam"
+  },
+  {
+    "name": "Elden Ring: Nightreign",
+    "launcher": "Steam",
+    "appid": 2622380,
+    "id": "game-092",
+    "source": "steam"
+  },
+  {
+    "name": "Enshrouded",
+    "launcher": "Steam",
+    "appid": 1203620,
+    "id": "game-093",
+    "source": "steam"
+  },
+  {
+    "name": "Euro Truck Simulator 2",
+    "launcher": "Steam",
+    "appid": 227300,
+    "id": "game-094",
+    "source": "steam"
+  },
+  {
+    "name": "Factorio",
+    "launcher": "Steam",
+    "appid": 427520,
+    "id": "game-095",
+    "source": "steam"
+  },
+  {
+    "name": "Garry's Mod",
+    "launcher": "Steam",
+    "appid": 4000,
+    "id": "game-096",
+    "source": "steam"
+  },
+  {
+    "name": "Grounded",
+    "launcher": "Steam",
+    "appid": 962130,
+    "id": "game-097",
+    "source": "steam"
+  },
+  {
+    "name": "Helldivers 2",
+    "launcher": "Steam",
+    "id": "game-098",
+    "appid": 553850,
+    "source": "steam"
+  },
+  {
+    "name": "Heroes of Might and Magic: Olden Era",
+    "launcher": "Steam",
+    "appid": 3105440,
+    "id": "game-099",
+    "source": "steam"
+  },
+  {
+    "name": "Hunt: Showdown 1896",
+    "launcher": "Steam",
+    "appid": 594650,
+    "id": "game-100",
+    "source": "steam"
+  },
+  {
+    "name": "inZOI",
+    "launcher": "Steam",
+    "appid": 2456740,
+    "id": "game-101",
+    "source": "steam"
+  },
+  {
+    "name": "Machine Party",
+    "launcher": "Steam",
+    "appid": 4108000,
+    "id": "game-102",
+    "source": "steam"
+  },
+  {
+    "name": "MECCHA CHAMELEON",
+    "launcher": "Steam",
+    "appid": 4704690,
+    "id": "game-103",
+    "source": "steam"
+  },
+  {
+    "name": "Metro 2033 Redux",
+    "launcher": "Steam",
+    "id": "game-104",
+    "appid": 286690,
+    "source": "steam"
+  },
+  {
+    "name": "Metro: Exodus",
+    "launcher": "Steam",
+    "appid": 412020,
+    "id": "game-105",
+    "source": "steam"
+  },
+  {
+    "name": "Metro: Last Light Redux",
+    "launcher": "Steam",
+    "id": "game-106",
+    "appid": 287390,
+    "source": "steam"
+  },
+  {
+    "name": "Peak",
+    "launcher": "Steam",
+    "appid": 3527290,
+    "id": "game-107",
+    "source": "steam"
+  },
+  {
+    "name": "PRAGMATA",
+    "launcher": "Steam",
+    "appid": 3357650,
+    "id": "game-108",
+    "source": "steam"
+  },
+  {
+    "name": "Project Zomboid",
+    "launcher": "Steam",
+    "appid": 108600,
+    "id": "game-109",
+    "source": "steam"
+  },
+  {
+    "name": "Quarantine Zone: The Last Check",
+    "launcher": "Steam",
+    "appid": 3419520,
+    "id": "game-110",
+    "source": "steam"
+  },
+  {
+    "name": "R.E.P.O.",
+    "launcher": "Steam",
+    "appid": 3241660,
+    "id": "game-111",
+    "source": "steam"
+  },
+  {
+    "name": "Ready Or Not",
+    "launcher": "Steam",
+    "appid": 1144200,
+    "id": "game-112",
+    "source": "steam"
+  },
+  {
+    "name": "RED FLAG",
+    "launcher": "Steam",
+    "id": "game-113",
+    "reason": "нужно уточнить Steam AppID"
+  },
+  {
+    "name": "RV There Yet?",
+    "launcher": "Steam",
+    "appid": 3949040,
+    "id": "game-114",
+    "source": "steam"
+  },
+  {
+    "name": "Schedule I",
+    "launcher": "Steam",
+    "appid": 3164500,
+    "id": "game-115",
+    "source": "steam"
+  },
+  {
+    "name": "Shift At Midnight",
+    "launcher": "Steam",
+    "appid": 3722330,
+    "id": "game-116",
+    "source": "steam"
+  },
+  {
+    "name": "Sons Of The Forest",
+    "launcher": "Steam",
+    "appid": 1326470,
+    "id": "game-117",
+    "source": "steam"
+  },
+  {
+    "name": "Squad",
+    "launcher": "Steam",
+    "appid": 393380,
+    "id": "game-118",
+    "source": "steam"
+  },
+  {
+    "name": "Stray",
+    "launcher": "Steam",
+    "appid": 1332010,
+    "id": "game-119",
+    "source": "steam"
+  },
+  {
+    "name": "Subnautica",
+    "launcher": "Steam",
+    "appid": 264710,
+    "id": "game-120",
+    "source": "steam"
+  },
+  {
+    "name": "Subnautica 2",
+    "launcher": "Steam",
+    "appid": 1962700,
+    "id": "game-121",
+    "source": "steam"
+  },
+  {
+    "name": "Terraria",
+    "launcher": "Steam",
+    "appid": 105600,
+    "id": "game-122",
+    "source": "steam"
+  },
+  {
+    "name": "The Forest",
+    "launcher": "Steam",
+    "appid": 242760,
+    "id": "game-123",
+    "source": "steam"
+  },
+  {
+    "name": "WARDOGS",
+    "launcher": "Steam",
+    "appid": 1867240,
+    "id": "game-124",
+    "source": "steam"
+  },
+  {
+    "name": "YAPYAP",
+    "launcher": "Steam",
+    "appid": 3834090,
+    "id": "game-125",
+    "source": "steam"
+  }
+]

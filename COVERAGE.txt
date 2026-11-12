@@ -1,0 +1,127 @@
+﻿Охват проверки — 12.11.2026. Разовая проверка источников, не гарантия будущей доступности.
+
+Albion Online — Albion Launcher: Источник ответил
+Warface — Astrum Play: источник версии пока не подключён
+Hearthstone — Battle.net: Источник ответил
+Heroes of the Storm — Battle.net: Источник ответил
+Overwatch 2 — Battle.net: Источник ответил
+StarCraft 2: Wings of Liberty — Battle.net: Источник ответил
+Escape from Tarkov — BSG: источник версии пока не подключён
+Escape from Tarkov Arena — BSG: источник версии пока не подключён
+Apex Legends — EA App: источник версии пока не подключён
+Fortnite — Epic Games: источник версии пока не подключён
+Rocket League — Epic Games: источник версии пока не подключён
+Sid Meier's Civilization 6 — Epic Games: источник версии пока не подключён
+World War Z — Epic Games: источник версии пока не подключён
+Genshin Impact — HoYoPlay: источник версии пока не подключён
+Minecraft: Java Edition — Legacy: Источник ответил
+Мир кораблей — Lesta: источник версии пока не подключён
+Мир танков — Lesta: источник версии пока не подключён
+Tanks Blitz — Lesta: источник версии пока не подключён
+MAJESTIC — MAJESTIC: источник версии пока не подключён
+OSU — OSU: Источник ответил
+League of Legends — Riot Client: источник версии пока не подключён
+Legends of Runeterra — Riot Client: источник версии пока не подключён
+Valorant — Riot Client: источник версии пока не подключён
+Roblox — Roblox: Источник ответил
+Albion Online — Steam: Источник ответил
+Apex Legends — Steam: Источник ответил
+Arena Breakout: Infinite — Steam: Источник ответил
+Brawlhalla — Steam: Источник ответил
+Call of Duty: Warzone 2 — Steam: Источник ответил
+Counter-Strike 2 — Steam: Источник ответил
+Crossout — Steam: Ошибка источника: KeyError
+Deadlock — Steam: Ошибка источника: ValueError
+Deceit 2 — Steam: Источник ответил
+Delta Force — Steam: Источник ответил
+Destiny 2 — Steam: Источник ответил
+Dota 2 — Steam: Источник ответил
+NieR: Automata — Steam: Источник ответил
+Palworld — Steam: Источник ответил
+PAYDAY 2 — Steam: Источник ответил
+Phasmophobia — Steam: Источник ответил
+Rust — Steam: Источник ответил
+Valheim — Steam: Источник ответил
+Warhammer 40,000: Space Marine II — Steam: Источник ответил
+Escape from Tarkov — Steam: Источник ответил
+Gears of War E-Day — Steam: Источник ответил
+Portal 2 — Steam: Источник ответил
+Raft — Steam: Источник ответил
+The Witcher 3: Wild Hunt — Steam: Источник ответил
+A Way Out — Steam: Источник ответил
+Battlefield 1 — Steam: Источник ответил
+Battlefield 2042 — Steam: Источник ответил
+Battlefield 4 — Steam: Источник ответил
+Battlefield 6 — Steam: Источник ответил
+Battlefield V — Steam: Источник ответил
+Burnout Paradise Remastered — Steam: Источник ответил
+Command & Conquer: Red Alert 3 — Steam: Источник ответил
+Dead Space (2023) — Steam: Источник ответил
+DIRT 5 — Steam: Источник ответил
+Dragon Age: Inquisition — Steam: Источник ответил
+EA SPORTS FC™ 26 — Steam: Источник ответил
+GRID Legends — Steam: Источник ответил
+It Takes Two — Steam: Источник ответил
+Lost in Random — Steam: Источник ответил
+Mass Effect Legendary Edition — Steam: Источник ответил
+Mass Effect: Andromeda — Steam: Источник ответил
+Mirror's Edge Catalyst — Steam: Источник ответил
+Need for Speed: Heat — Steam: Источник ответил
+Need for Speed: Hot Pursuit Remastered — Steam: Источник ответил
+Need for Speed: Most Wanted (2012) — Steam: Источник ответил
+Need for Speed: Unbound — Steam: Источник ответил
+Star Wars Jedi: Fallen Order — Steam: Источник ответил
+Star Wars Jedi: Survivor — Steam: Источник ответил
+Star Wars: Battlefront II (2017) — Steam: Источник ответил
+Titanfall 2 — Steam: Источник ответил
+Unravel — Steam: Источник ответил
+Unravel Two — Steam: Источник ответил
+007 First Light — Steam: Источник ответил
+Abiotic Factor — Steam: Источник ответил
+ARC Raiders — Steam: Источник ответил
+Assassin's Creed Odyssey — Steam: Источник ответил
+Assassin's Creed Shadows — Steam: Источник ответил
+Assassin’s Creed Unity — Steam: Источник ответил
+Assassin's Creed Valhalla — Steam: Источник ответил
+Backrooms: Escape Together — Steam: Источник ответил
+BeamNG.drive — Steam: Источник ответил
+Bodycam — Steam: Источник ответил
+Buckshot Roulette — Steam: Источник ответил
+Chained Together — Steam: Источник ответил
+Clair Obscur: Expedition 33 — Steam: Источник ответил
+Content Warning — Steam: Источник ответил
+Dying Light 2: Stay Human — Steam: Источник ответил
+Elden Ring: Nightreign — Steam: Источник ответил
+Enshrouded — Steam: Источник ответил
+Euro Truck Simulator 2 — Steam: Источник ответил
+Factorio — Steam: Источник ответил
+Garry's Mod — Steam: Источник ответил
+Grounded — Steam: Источник ответил
+Helldivers 2 — Steam: Источник ответил
+Heroes of Might and Magic: Olden Era — Steam: Источник ответил
+Hunt: Showdown 1896 — Steam: Источник ответил
+inZOI — Steam: Источник ответил
+Machine Party — Steam: Источник ответил
+MECCHA CHAMELEON — Steam: Источник ответил
+Metro 2033 Redux — Steam: Источник ответил
+Metro: Exodus — Steam: Источник ответил
+Metro: Last Light Redux — Steam: Источник ответил
+Peak — Steam: Источник ответил
+PRAGMATA — Steam: Источник ответил
+Project Zomboid — Steam: Источник ответил
+Quarantine Zone: The Last Check — Steam: Источник ответил
+R.E.P.O. — Steam: Источник ответил
+Ready Or Not — Steam: Источник ответил
+RED FLAG — Steam: нужно уточнить Steam AppID
+RV There Yet? — Steam: Источник ответил
+Schedule I — Steam: Источник ответил
+Shift At Midnight — Steam: Источник ответил
+Sons Of The Forest — Steam: Источник ответил
+Squad — Steam: Источник ответил
+Stray — Steam: Источник ответил
+Subnautica — Steam: Источник ответил
+Subnautica 2 — Steam: Источник ответил
+Terraria — Steam: Источник ответил
+The Forest — Steam: Источник ответил
+WARDOGS — Steam: Источник ответил
+YAPYAP — Steam: Источник ответил
