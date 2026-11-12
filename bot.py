@@ -49,6 +49,14 @@ def read_version(g):
         if not any(x['id'] == v and x['type'] == 'release' for x in d['versions']):
             raise ValueError('Нет подтверждённого стабильного релиза')
         return v
+    if kind == 'riot_lol':
+        versions = get_json('https://ddragon.leagueoflegends.com/api/versions.json')
+        if not versions or not isinstance(versions[0], str):
+            raise ValueError('Riot не вернул версию League of Legends')
+        return versions[0]
+    if kind == 'riot_valorant':
+        data = get_json('https://valorant-api.com/v1/version')['data']
+        return data['version']
     if kind == 'battle':
         raw = fetch('https://eu.version.battle.net/v2/products/' + g['product'] + '/versions')
         rows = [x.split('|') for x in raw.splitlines() if x and not x.startswith('#')]
@@ -124,7 +132,7 @@ def record(c, g, version, error, now):
 
 
 def scan(c, games):
-    enabled = [g for g in games if g.get('source')]
+    enabled = [g for g in games if g.get('enabled', True) and g.get('source')]
     with concurrent.futures.ThreadPoolExecutor(max_workers=4) as pool:
         for g, v, e in pool.map(safe_check, enabled):
             with c:
@@ -171,6 +179,8 @@ def report(c, games, start, end):
     states = {r['id']: r for r in c.execute('SELECT * FROM games')}
     manual = []
     for g in games:
+        if not g.get('enabled', True):
+            continue
         s = states.get(g['id'])
         if not g.get('source'):
             manual.append(g['name'])

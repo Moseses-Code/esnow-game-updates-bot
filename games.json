@@ -9,7 +9,8 @@
     "name": "Warface",
     "launcher": "Astrum Play",
     "id": "game-002",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 291480
   },
   {
     "name": "Hearthstone",
@@ -47,7 +48,8 @@
     "name": "Escape from Tarkov",
     "launcher": "BSG",
     "id": "game-007",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 3932890
   },
   {
     "name": "Escape from Tarkov Arena",
@@ -59,7 +61,8 @@
     "name": "Apex Legends",
     "launcher": "EA App",
     "id": "game-009",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 1172470
   },
   {
     "name": "Fortnite",
@@ -71,19 +74,22 @@
     "name": "Rocket League",
     "launcher": "Epic Games",
     "id": "game-011",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 252950
   },
   {
     "name": "Sid Meier's Civilization 6",
     "launcher": "Epic Games",
     "id": "game-012",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 289070
   },
   {
     "name": "World War Z",
     "launcher": "Epic Games",
     "id": "game-013",
-    "reason": "источник версии пока не подключён"
+    "source": "steam",
+    "appid": 699130
   },
   {
     "name": "Genshin Impact",
@@ -131,7 +137,7 @@
     "name": "League of Legends",
     "launcher": "Riot Client",
     "id": "game-021",
-    "reason": "источник версии пока не подключён"
+    "source": "riot_lol"
   },
   {
     "name": "Legends of Runeterra",
@@ -143,7 +149,7 @@
     "name": "Valorant",
     "launcher": "Riot Client",
     "id": "game-023",
-    "reason": "источник версии пока не подключён"
+    "source": "riot_valorant"
   },
   {
     "name": "Roblox",
@@ -771,7 +777,7 @@
     "name": "RED FLAG",
     "launcher": "Steam",
     "id": "game-113",
-    "reason": "нужно уточнить Steam AppID"
+    "enabled": false
   },
   {
     "name": "RV There Yet?",
