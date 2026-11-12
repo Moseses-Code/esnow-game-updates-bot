@@ -35,7 +35,7 @@ class MonitorTests(unittest.TestCase):
     def test_unconnected_never_counted_as_checked(self):
         g={'id':'b','name':'Unknown','launcher':'Other'}
         s=bot.report(self.c,[g],0,100)
-        self.assertIn('Проверь вручную:',s)
+        self.assertIn('Проверь вручную',s)
         self.assertIn('• Unknown',s)
     def test_minecraft_excludes_snapshot(self):
         d={'latest':{'release':'1.0','snapshot':'2.0-pre'},'versions':[{'id':'1.0','type':'release'},{'id':'2.0-pre','type':'snapshot'}]}

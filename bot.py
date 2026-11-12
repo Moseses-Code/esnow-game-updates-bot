@@ -169,13 +169,13 @@ def report(c, games, start, end):
         changed[e['game']] = e
     index = {g['id']: g for g in games}
     if changed:
-        lines = [period + ' вышли обновления:']
+        lines = ['<b>⚡ ' + period + ' вышли обновления</b>']
         for key, e in changed.items():
             g = index.get(key, {'name': key, 'launcher': '?'})
             size = g.get('update_size')
             lines.append('• ' + g['name'] + (' — ' + size if size else ''))
     else:
-        lines = [period + ' обновлений не вышло.']
+        lines = ['<b>🟢 ' + period + ' обновлений не вышло</b>']
     states = {r['id']: r for r in c.execute('SELECT * FROM games')}
     manual = []
     for g in games:
@@ -187,7 +187,7 @@ def report(c, games, start, end):
         elif not s or s['error'] or not s['checked'] or end - s['checked'] > INTERVAL * 2:
             manual.append(g['name'])
     if manual:
-        lines += ['', 'Проверь вручную:'] + ['• ' + name for name in manual]
+        lines += ['', '<b>🟡 Проверь вручную</b>'] + ['• ' + name for name in manual]
     return '\n'.join(lines)
 
 
@@ -200,8 +200,8 @@ def telegram(config, method, payload):
 
 MENU = {
     'keyboard': [[
-        {'text': 'Проверить обновления'},
-        {'text': 'Опубликовать сводку'},
+        {'text': '🟢 Проверить обновления'},
+        {'text': '⚪ Опубликовать сводку'},
     ]],
     'resize_keyboard': True,
     'is_persistent': True,
@@ -210,7 +210,7 @@ MENU = {
 
 def send(config, chat_id, text):
     telegram(config, 'sendMessage', {
-        'chat_id': chat_id, 'text': text, 'reply_markup': MENU})
+        'chat_id': chat_id, 'text': text, 'parse_mode': 'HTML', 'reply_markup': MENU})
 
 
 def queue_reports(c, games, now):
@@ -346,11 +346,11 @@ def main():
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
                             send(config, chat_id, f'ESnow работает. МСК: {dt.datetime.now(MSK):%d.%m %H:%M}. Свежие данные: {rows}/{len(games)}. Подписчиков: {c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}. Сводки 08:30 и 20:30.')
-                        elif cmd in ('/report', 'Опубликовать сводку') and now - last_manual.get(chat_id, 0) > 10:
+                        elif cmd in ('/report', '⚪ Опубликовать сводку') and now - last_manual.get(chat_id, 0) > 10:
                             last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
                                 send(config, chat_id, part)
-                        elif cmd == 'Проверить обновления' and now - last_manual.get(chat_id, 0) > 5:
+                        elif cmd == '🟢 Проверить обновления' and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             manual_report_after_scan.add(chat_id)
                             if future is None:
