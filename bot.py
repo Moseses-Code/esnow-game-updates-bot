@@ -2,6 +2,7 @@
 import concurrent.futures
 import datetime as dt
 import getpass
+import html
 import hashlib
 import json
 import logging
@@ -168,14 +169,15 @@ def report(c, games, start, end):
     for e in events:
         changed[e['game']] = e
     index = {g['id']: g for g in games}
+    icon = '🌙' if night else '☀️'
     if changed:
-        lines = ['<b>⚡ ' + period + ' вышли обновления</b>']
+        lines = ['<b>' + icon + ' ' + period + ' вышли обновления</b>']
         for key, e in changed.items():
             g = index.get(key, {'name': key, 'launcher': '?'})
             size = g.get('update_size')
-            lines.append('• ' + g['name'] + (' — ' + size if size else ''))
+            lines.append('• ' + html.escape(g['name']) + (' — ' + html.escape(size) if size else ''))
     else:
-        lines = ['<b>🟢 ' + period + ' обновлений не вышло</b>']
+        lines = ['<b>' + icon + ' ' + period + ' обновлений не вышло</b>']
     states = {r['id']: r for r in c.execute('SELECT * FROM games')}
     manual = []
     for g in games:
@@ -187,7 +189,7 @@ def report(c, games, start, end):
         elif not s or s['error'] or not s['checked'] or end - s['checked'] > INTERVAL * 2:
             manual.append(g['name'])
     if manual:
-        lines += ['', '<b>🟡 Проверь вручную</b>'] + ['• ' + name for name in manual]
+        lines += ['', '<b>❗ Проверь вручную</b>'] + ['• ' + html.escape(name) for name in manual]
     return '\n'.join(lines)
 
 
@@ -200,8 +202,8 @@ def telegram(config, method, payload):
 
 MENU = {
     'inline_keyboard': [[
-        {'text': 'Проверить обновления', 'callback_data': 'check_updates', 'style': 'success'},
-        {'text': 'Сообщить об обновлении', 'callback_data': 'publish_report'},
+        {'text': 'Проверить обновления', 'icon_custom_emoji_id': '5429571366384842791', 'callback_data': 'check_updates', 'style': 'success'},
+        {'text': 'Сообщить об обновлении ❗', 'callback_data': 'publish_report'},
     ]],
 }
 
@@ -340,9 +342,9 @@ def main():
                             with c:
                                 c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
                                           (chat_id, now, m.get('from', {}).get('username'), m.get('from', {}).get('first_name')))
-                            send(config, chat_id, '<b>🧊 ESnow Updates</b>\n\nОтчёт приходит в <b>08:30</b> и <b>20:30</b> по Москве.\n\nКнопки ниже позволяют проверить игры и получить сводку в любое время.')
+                            send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nОтчёт приходит в <b>08:30</b> и <b>20:30</b> по Москве.\n\nКнопки ниже позволяют проверить игры и получить сводку в любое время.')
                         elif not c.execute('SELECT 1 FROM subscribers WHERE chat_id=?', (chat_id,)).fetchone():
-                            send(config, chat_id, '<b>🧊 ESnow Updates</b>\n\nНажмите /start, чтобы получать отчёты.')
+                            send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nНажмите /start, чтобы получать отчёты.')
                         elif cmd in ('/status',) and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
@@ -356,9 +358,9 @@ def main():
                             manual_report_after_scan.add(chat_id)
                             if future is None:
                                 future = pool.submit(background_scan)
-                                send(config, chat_id, '<b>⏳ Проверяю обновления</b>\n\nСводка придёт после завершения.')
+                                send(config, chat_id, '<b><tg-emoji emoji-id="5256172434154866918">⏳</tg-emoji> Проверяю обновления</b>\n\nСводка придёт после завершения.')
                             else:
-                                send(config, chat_id, '<b>⏳ Проверка уже идёт</b>\n\nСводка придёт после её завершения.')
+                                send(config, chat_id, '<b><tg-emoji emoji-id="5256172434154866918">⏳</tg-emoji> Проверка уже идёт</b>\n\nСводка придёт после её завершения.')
                     with c:
                         put(c, 'offset', u['update_id'] + 1)
         except Exception as e:
