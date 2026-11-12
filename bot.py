@@ -22,6 +22,7 @@ import xml.etree.ElementTree as ET
 ROOT = Path(__file__).resolve().parent
 MSK = dt.timezone(dt.timedelta(hours=3), 'MSK')
 INTERVAL = 900
+VERSION = '2026.11.12-diagnostics'
 
 def fetch(url, payload=None):
     data = None if payload is None else json.dumps(payload).encode()
@@ -151,8 +152,10 @@ def safe_check(g):
         if not isinstance(v, str) or not v.strip():
             raise ValueError('Пустая версия')
         return g, v, None
+    except urllib.error.HTTPError as e:
+        return g, None, 'HTTP ' + str(e.code)
     except Exception as e:
-        # Do not print HTTP URLs: Telegram URLs contain a token.
+        # Do not print exception text: Telegram URLs can contain a token.
         return g, None, type(e).__name__
 
 def connect(path=None):
@@ -460,7 +463,23 @@ def main():
                         elif cmd in ('/status',) and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
-                            send(config, chat_id, f'<b>🟢 ESnow Updates работает</b>\n\nВремя: <b>{dt.datetime.now(MSK):%d.%m %H:%M} МСК</b>\nСвежие проверки: <b>{rows}/{len(games)}</b>\nПодписчиков: <b>{c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}</b>\n\nОтчёты: <b>08:30</b> и <b>20:30</b>.')
+                            send(config, chat_id, f'<b>🟢 ESnow Updates работает</b>\n\nВерсия: <b>{VERSION}</b>\nВремя: <b>{dt.datetime.now(MSK):%d.%m %H:%M} МСК</b>\nСвежие проверки: <b>{rows}/{len(games)}</b>\nПодписчиков: <b>{c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}</b>\n\nОтчёты: <b>08:30</b> и <b>20:30</b>.\n/diagnose — причины ошибок.')
+                        elif cmd == '/diagnose' and now - last_manual.get(chat_id, 0) > 10:
+                            last_manual[chat_id] = now
+                            lines = ['<b>🛠 Диагностика источников</b>', 'Версия: ' + VERSION]
+                            states = {row['id']: row for row in c.execute('SELECT * FROM games')}
+                            for g in games:
+                                if not g.get('enabled', True):
+                                    continue
+                                state = states.get(g['id'])
+                                if not g.get('source'):
+                                    lines.append('• ' + html.escape(g['name']) + ': источник не подключён')
+                                elif not state or state['error']:
+                                    lines.append('• ' + html.escape(g['name']) + ': ' + html.escape(state['error'] if state else 'ещё не проверялась'))
+                            if len(lines) == 2:
+                                lines.append('Все источники ответили при последнем обходе.')
+                            for part in split_text('\n'.join(lines)):
+                                send(config, chat_id, part)
                         elif cmd in ('/report', 'publish_report', 'Сообщить об обновлении ❗') and now - last_manual.get(chat_id, 0) > 10:
                             last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
