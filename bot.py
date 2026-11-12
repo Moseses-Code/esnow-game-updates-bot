@@ -8,6 +8,7 @@ import json
 import logging
 from logging.handlers import RotatingFileHandler
 import os
+import re
 from pathlib import Path
 import socket
 import sqlite3
@@ -58,6 +59,14 @@ def read_version(g):
     if kind == 'riot_valorant':
         data = get_json('https://valorant-api.com/v1/version')['data']
         return data['version']
+    if kind == 'steam_patch_news':
+        app = str(g['appid'])
+        items = get_json('https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=' + app + '&count=100&maxlength=0')['appnews']['newsitems']
+        for item in items:
+            title = item.get('title', '')
+            if item.get('feedlabel') == 'Community Announcements' and re.search(r'(?i)\b(update|patch|hotfix|обновлени|патч|исправлени)', title):
+                return str(item['gid'])
+        raise ValueError('Нет подтверждённых патч-нотов среди последних новостей Steam')
     if kind == 'battle':
         raw = fetch('https://eu.version.battle.net/v2/products/' + g['product'] + '/versions')
         rows = [x.split('|') for x in raw.splitlines() if x and not x.startswith('#')]
@@ -279,6 +288,26 @@ def main():
         return
     config = json.loads((ROOT / 'settings.json').read_text(encoding='utf-8'))
     games = json.loads((ROOT / 'games.json').read_text(encoding='utf-8'))
+    # Migrate installations where only bot.py was replaced but games.json stayed old.
+    source_overrides = {
+        'game-002': ('steam', 291480), 'game-007': ('steam', 3932890),
+        'game-009': ('steam', 1172470), 'game-011': ('steam', 252950),
+        'game-012': ('steam', 289070), 'game-013': ('steam', 699130),
+        'game-031': ('steam_patch_news', 386180),
+        'game-032': ('steam_patch_news', 1422450),
+    }
+    for g in games:
+        if g['id'] == 'game-113':
+            g['enabled'] = False
+        elif g['id'] in source_overrides:
+            g['source'], g['appid'] = source_overrides[g['id']]
+            g.pop('reason', None)
+        elif g['id'] == 'game-021':
+            g['source'] = 'riot_lol'
+            g.pop('reason', None)
+        elif g['id'] == 'game-023':
+            g['source'] = 'riot_valorant'
+            g.pop('reason', None)
     c = connect()
     now = time.time()
     with c:
