@@ -199,12 +199,10 @@ def telegram(config, method, payload):
 
 
 MENU = {
-    'keyboard': [[
-        {'text': '🟢 Проверить обновления'},
-        {'text': '⚪ Опубликовать сводку'},
+    'inline_keyboard': [[
+        {'text': 'Проверить обновления', 'callback_data': 'check_updates', 'style': 'success'},
+        {'text': 'Опубликовать сводку', 'callback_data': 'publish_report'},
     ]],
-    'resize_keyboard': True,
-    'is_persistent': True,
 }
 
 
@@ -329,12 +327,15 @@ def main():
             if now - last_poll >= 5:
                 last_poll = now
                 offset = int(meta(c, 'offset', 0))
-                updates = telegram(config, 'getUpdates', {'offset': offset, 'timeout': 0, 'allowed_updates': ['message']})
+                updates = telegram(config, 'getUpdates', {'offset': offset, 'timeout': 0, 'allowed_updates': ['message', 'callback_query']})
                 for u in updates:
-                    m = u.get('message', {})
+                    callback = u.get('callback_query')
+                    m = callback.get('message', {}) if callback else u.get('message', {})
                     if m.get('chat', {}).get('type') == 'private':
                         chat_id = m['chat']['id']
-                        cmd = m.get('text', '').split('@')[0].strip()
+                        cmd = callback.get('data', '') if callback else m.get('text', '').split('@')[0].strip()
+                        if callback:
+                            telegram(config, 'answerCallbackQuery', {'callback_query_id': callback['id']})
                         if cmd == '/start':
                             with c:
                                 c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
@@ -346,11 +347,11 @@ def main():
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
                             send(config, chat_id, f'ESnow работает. МСК: {dt.datetime.now(MSK):%d.%m %H:%M}. Свежие данные: {rows}/{len(games)}. Подписчиков: {c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}. Сводки 08:30 и 20:30.')
-                        elif cmd in ('/report', '⚪ Опубликовать сводку') and now - last_manual.get(chat_id, 0) > 10:
+                        elif cmd in ('/report', 'publish_report') and now - last_manual.get(chat_id, 0) > 10:
                             last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
                                 send(config, chat_id, part)
-                        elif cmd == '🟢 Проверить обновления' and now - last_manual.get(chat_id, 0) > 5:
+                        elif cmd == 'check_updates' and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             manual_report_after_scan.add(chat_id)
                             if future is None:
