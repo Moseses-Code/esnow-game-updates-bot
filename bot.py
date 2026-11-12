@@ -153,49 +153,31 @@ def split_text(text, limit=3500):
 
 
 def report(c, games, start, end):
-    fmt = lambda t: dt.datetime.fromtimestamp(t, MSK).strftime('%d.%m %H:%M')
     night = dt.datetime.fromtimestamp(end, MSK).hour == 8
-    lines = ['ESnow · ' + ('За ночь' if night else 'За день'), fmt(start) + ' — ' + fmt(end) + ' МСК', '']
+    period = 'За ночь' if night else 'За день'
     events = c.execute('SELECT * FROM events WHERE seen>? AND seen<=? ORDER BY seen', (start, end)).fetchall()
     changed = {}
     for e in events:
         changed[e['game']] = e
     index = {g['id']: g for g in games}
     if changed:
-        lines.append('Обнаружены изменения версий:')
+        lines = [period + ' вышли обновления:']
         for key, e in changed.items():
             g = index.get(key, {'name': key, 'launcher': '?'})
-            suffix = ' (после перерыва проверки)' if e['uncertain'] else ''
-            lines.append('• ' + g['name'] + ' — ' + g['launcher'] + suffix)
+            size = g.get('update_size')
+            lines.append('• ' + g['name'] + (' — ' + size if size else ''))
     else:
-        lines.append('Новых изменений версий не обнаружено среди проверенных игр.')
+        lines = [period + ' обновлений не вышло.']
     states = {r['id']: r for r in c.execute('SELECT * FROM games')}
-    unavailable, pending, ok = [], [], 0
-    fresh_baselines = 0
+    manual = []
     for g in games:
-        label = g['name'] + ' — ' + g['launcher']
         s = states.get(g['id'])
         if not g.get('source'):
-            pending.append(label + ': ' + g.get('reason', 'источник не подключён'))
+            manual.append(g['name'])
         elif not s or s['error'] or not s['checked'] or end - s['checked'] > INTERVAL * 2:
-            unavailable.append(label)
-        else:
-            ok += 1
-        if s and s['baseline'] and start < s['baseline'] <= end:
-            fresh_baselines += 1
-    lines += ['', f'Источники отвечают: {ok}/{len(games)}. Ошибки/нет свежих данных: {len(unavailable)}. Не подключено: {len(pending)}.']
-    if unavailable:
-        lines += ['', 'Не удалось проверить:'] + ['• ' + x for x in unavailable]
-    if pending:
-        lines += ['', 'Не подключены (нужна ручная проверка):'] + ['• ' + x for x in pending]
-    born = float(meta(c, 'created', end))
-    gap = c.execute('SELECT 1 FROM gaps WHERE start<? AND end>? LIMIT 1', (end, start)).fetchone()
-    if born > start or fresh_baselines:
-        lines += ['', 'Первое наблюдение создаёт базовую версию. Обновления до начала наблюдения неизвестны.']
-    if gap:
-        lines += ['', 'Был перерыв работы. Полнота данных за этот период не гарантируется.']
-    lines += ['', 'Период указан по времени обнаружения, а не точному времени выпуска. Проверка каждые 15 минут; возможна задержка источника. Изменение сборки, включая откат, не всегда требует загрузки на Windows.',
-              'Battle.net: регион EU. Steam: публичная ветка через сторонний SteamCMD API. Minecraft: только Stable. Установку на компьютерах бот не проверяет.']
+            manual.append(g['name'])
+    if manual:
+        lines += ['', 'Проверь вручную:'] + ['• ' + name for name in manual]
     return '\n'.join(lines)
 
 

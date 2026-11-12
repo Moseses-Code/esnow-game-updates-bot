@@ -30,13 +30,13 @@ class MonitorTests(unittest.TestCase):
     def test_half_day_events(self):
         bot.record(self.c,self.g,'1',None,100)
         bot.record(self.c,self.g,'2',None,200)
-        self.assertIn('Обнаружены изменения',bot.report(self.c,[self.g],100,200))
-        self.assertNotIn('Обнаружены изменения',bot.report(self.c,[self.g],200,300))
+        self.assertIn('вышли обновления',bot.report(self.c,[self.g],100,200))
+        self.assertIn('обновлений не вышло',bot.report(self.c,[self.g],200,300))
     def test_unconnected_never_counted_as_checked(self):
         g={'id':'b','name':'Unknown','launcher':'Other'}
         s=bot.report(self.c,[g],0,100)
-        self.assertIn('Не подключено: 1',s)
-        self.assertIn('нужна ручная проверка',s)
+        self.assertIn('Проверь вручную:',s)
+        self.assertIn('• Unknown',s)
     def test_minecraft_excludes_snapshot(self):
         d={'latest':{'release':'1.0','snapshot':'2.0-pre'},'versions':[{'id':'1.0','type':'release'},{'id':'2.0-pre','type':'snapshot'}]}
         with patch.object(bot,'get_json',return_value=d):self.assertEqual(bot.read_version({'source':'minecraft'}),'1.0')
