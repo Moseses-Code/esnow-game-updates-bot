@@ -55,7 +55,7 @@
     "name": "Escape from Tarkov Arena",
     "launcher": "BSG",
     "id": "game-008",
-    "reason": "источник версии пока не подключён"
+    "source": "tarkov_arena_news"
   },
   {
     "name": "Apex Legends",
@@ -107,25 +107,28 @@
     "name": "Мир кораблей",
     "launcher": "Lesta",
     "id": "game-016",
-    "reason": "источник версии пока не подключён"
+    "source": "lesta_wiki",
+    "page": "Мир_кораблей:Список_обновлений"
   },
   {
     "name": "Мир танков",
     "launcher": "Lesta",
     "id": "game-017",
-    "reason": "источник версии пока не подключён"
+    "source": "lesta_wiki",
+    "page": "Мир_танков:Список_обновлений"
   },
   {
     "name": "Tanks Blitz",
     "launcher": "Lesta",
     "id": "game-018",
-    "reason": "источник версии пока не подключён"
+    "source": "lesta_wiki",
+    "page": "Tanks_Blitz:Список_обновлений"
   },
   {
     "name": "MAJESTIC",
     "launcher": "MAJESTIC",
     "id": "game-019",
-    "reason": "источник версии пока не подключён"
+    "source": "majestic_news"
   },
   {
     "name": "OSU",

@@ -33,6 +33,11 @@ def fetch(url, payload=None):
 def get_json(url):
     return json.loads(fetch(url))
 
+def fetch_public_page(url):
+    req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+    with urllib.request.urlopen(req, timeout=25) as response:
+        return response.read().decode('utf-8-sig')
+
 def read_version(g):
     kind = g.get('source')
     if kind == 'steam':
@@ -67,6 +72,26 @@ def read_version(g):
             if item.get('feedlabel') == 'Community Announcements' and re.search(r'(?i)\b(update|patch|hotfix|обновлени|патч|исправлени)', title):
                 return str(item['gid'])
         raise ValueError('Нет подтверждённых патч-нотов среди последних новостей Steam')
+    if kind == 'lesta_wiki':
+        query = urllib.parse.urlencode({'action': 'parse', 'page': g['page'], 'prop': 'wikitext', 'format': 'json'})
+        content = get_json('https://wiki.lesta.ru/api.php?' + query)['parse']['wikitext']['*']
+        found = re.search(r'(?i)(?:Обновление\s*[= ]\s*|Версия\s*)(\d+(?:\.\d+){1,3})', content)
+        if not found:
+            raise ValueError('Версия не найдена на официальной Lesta Wiki')
+        return found.group(1)
+    if kind == 'tarkov_arena_news':
+        page = fetch_public_page('https://arena.tarkov.com/news')
+        versions = re.findall(r'Escape from Tarkov: Arena\s+(\d+(?:\.\d+){2,4})\s+patch notes', page, re.I)
+        if not versions:
+            raise ValueError('Не найдены официальные патч-ноты Arena')
+        return max(versions, key=lambda s: tuple(map(int, s.split('.'))))
+    if kind == 'majestic_news':
+        page = fetch_public_page('https://t.me/s/majestic_gta5')
+        posts = re.findall(r'data-post="majestic/(\d+)"([\s\S]*?)(?=data-post="majestic/|$)', page)
+        matches = [int(post_id) for post_id, body in posts if re.search(r'(?i)Обновление:', body)]
+        if not matches:
+            raise ValueError('Не найдена официальная публикация Majestic об обновлении')
+        return str(max(matches))
     if kind == 'battle':
         raw = fetch('https://eu.version.battle.net/v2/products/' + g['product'] + '/versions')
         rows = [x.split('|') for x in raw.splitlines() if x and not x.startswith('#')]
@@ -307,6 +332,18 @@ def main():
             g.pop('reason', None)
         elif g['id'] == 'game-023':
             g['source'] = 'riot_valorant'
+            g.pop('reason', None)
+        elif g['id'] in ('game-016', 'game-017', 'game-018'):
+            g['source'] = 'lesta_wiki'
+            g['page'] = {'game-016': 'Мир_кораблей:Список_обновлений',
+                         'game-017': 'Мир_танков:Список_обновлений',
+                         'game-018': 'Tanks_Blitz:Список_обновлений'}[g['id']]
+            g.pop('reason', None)
+        elif g['id'] == 'game-008':
+            g['source'] = 'tarkov_arena_news'
+            g.pop('reason', None)
+        elif g['id'] == 'game-019':
+            g['source'] = 'majestic_news'
             g.pop('reason', None)
     c = connect()
     now = time.time()
