@@ -200,8 +200,8 @@ def telegram(config, method, payload):
 
 MENU = {
     'inline_keyboard': [[
-        {'text': 'Проверить обновления', 'callback_data': 'check_updates', 'style': 'success'},
-        {'text': 'Опубликовать сводку', 'callback_data': 'publish_report'},
+        {'text': 'Проверяю обновления ⏳', 'callback_data': 'check_updates', 'style': 'success'},
+        {'text': 'Сообщить об обновлении', 'callback_data': 'publish_report'},
     ]],
 }
 
@@ -340,13 +340,13 @@ def main():
                             with c:
                                 c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
                                           (chat_id, now, m.get('from', {}).get('username'), m.get('from', {}).get('first_name')))
-                            send(config, chat_id, 'ESnow: вы подписаны на сводки в 08:30 и 20:30 МСК. Кнопки ниже позволяют запросить сводку в любое время.')
+                            send(config, chat_id, '<b>🧊 ESnow Updates</b>\n\nОтчёт приходит в <b>08:30</b> и <b>20:30</b> по Москве.\n\nКнопки ниже позволяют проверить игры и получить сводку в любое время.')
                         elif not c.execute('SELECT 1 FROM subscribers WHERE chat_id=?', (chat_id,)).fetchone():
-                            send(config, chat_id, 'Нажмите /start, чтобы подписаться на сводки ESnow.')
+                            send(config, chat_id, '<b>🧊 ESnow Updates</b>\n\nНажмите /start, чтобы получать отчёты.')
                         elif cmd in ('/status',) and now - last_manual.get(chat_id, 0) > 5:
                             last_manual[chat_id] = now
                             rows = c.execute('SELECT COUNT(*) FROM games WHERE checked IS NOT NULL AND error IS NULL AND checked>?', (now - 1800,)).fetchone()[0]
-                            send(config, chat_id, f'ESnow работает. МСК: {dt.datetime.now(MSK):%d.%m %H:%M}. Свежие данные: {rows}/{len(games)}. Подписчиков: {c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}. Сводки 08:30 и 20:30.')
+                            send(config, chat_id, f'<b>🟢 ESnow Updates работает</b>\n\nВремя: <b>{dt.datetime.now(MSK):%d.%m %H:%M} МСК</b>\nСвежие проверки: <b>{rows}/{len(games)}</b>\nПодписчиков: <b>{c.execute("SELECT COUNT(*) FROM subscribers").fetchone()[0]}</b>\n\nОтчёты: <b>08:30</b> и <b>20:30</b>.')
                         elif cmd in ('/report', 'publish_report') and now - last_manual.get(chat_id, 0) > 10:
                             last_manual[chat_id] = now
                             for part in split_text(report(c, games, boundary(now), now)):
@@ -356,9 +356,9 @@ def main():
                             manual_report_after_scan.add(chat_id)
                             if future is None:
                                 future = pool.submit(background_scan)
-                                send(config, chat_id, 'Запускаю внеочередную проверку. Сводка придёт после завершения.')
+                                send(config, chat_id, '<b>🟢 Проверка запущена</b>\n\nСводка придёт после завершения.')
                             else:
-                                send(config, chat_id, 'Проверка уже выполняется. Сводка придёт после её завершения.')
+                                send(config, chat_id, '<b>⏳ Проверка уже идёт</b>\n\nСводка придёт после её завершения.')
                     with c:
                         put(c, 'offset', u['update_id'] + 1)
         except Exception as e:
