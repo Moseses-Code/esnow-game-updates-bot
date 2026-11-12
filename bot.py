@@ -200,7 +200,7 @@ def telegram(config, method, payload):
 
 MENU = {
     'inline_keyboard': [[
-        {'text': 'Проверяю обновления ⏳', 'callback_data': 'check_updates', 'style': 'success'},
+        {'text': 'Проверить обновления', 'callback_data': 'check_updates', 'style': 'success'},
         {'text': 'Сообщить об обновлении', 'callback_data': 'publish_report'},
     ]],
 }
@@ -356,7 +356,7 @@ def main():
                             manual_report_after_scan.add(chat_id)
                             if future is None:
                                 future = pool.submit(background_scan)
-                                send(config, chat_id, '<b>🟢 Проверка запущена</b>\n\nСводка придёт после завершения.')
+                                send(config, chat_id, '<b>⏳ Проверяю обновления</b>\n\nСводка придёт после завершения.')
                             else:
                                 send(config, chat_id, '<b>⏳ Проверка уже идёт</b>\n\nСводка придёт после её завершения.')
                     with c:
