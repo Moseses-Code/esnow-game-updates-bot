@@ -1,5 +1,6 @@
 import datetime as dt
 import json
+import urllib.error
 import tempfile
 import unittest
 from unittest.mock import patch
@@ -43,6 +44,14 @@ class MonitorTests(unittest.TestCase):
     def test_steam_without_optional_release_state(self):
         d={'data':{'1':{'common':{},'depots':{'branches':{'public':{'buildid':'42'}}}}}}
         with patch.object(bot,'get_json',return_value=d):self.assertEqual(bot.read_version(self.g),'42')
+    def test_fortnite_uses_live_build_when_epic_blocks_news(self):
+        with patch.object(bot, 'fetch_public_page', side_effect=urllib.error.HTTPError('', 403, '', {}, None)):
+            with patch.object(bot, 'get_json', return_value={'data': {'build': '++Fortnite+Release-43.10-CL-60118918'}}):
+                self.assertEqual(bot.read_version({'source': 'fortnite_news'}), '43.10')
+    def test_lol_uses_patch_notes_when_ddragon_unreachable(self):
+        with patch.object(bot, 'get_json', side_effect=urllib.error.URLError('DNS')):
+            with patch.object(bot, 'fetch_public_page', return_value='Patch 26.22 Notes'):
+                self.assertEqual(bot.read_version({'source': 'riot_lol'}), '16.22.1')
     def test_only_public_steam_branch(self):
         d={'data':{'1':{'common':{'releasestate':'released'},'depots':{'branches':{'public':{'buildid':'42'},'beta':{'buildid':'99'}}}}}}
         with patch.object(bot,'get_json',return_value=d):self.assertEqual(bot.read_version(self.g),'42')

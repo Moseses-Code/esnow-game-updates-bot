@@ -65,10 +65,19 @@ def read_version(g):
             raise ValueError('Нет подтверждённого стабильного релиза')
         return v
     if kind == 'riot_lol':
-        versions = get_json('https://ddragon.leagueoflegends.com/api/versions.json')
-        if not versions or not isinstance(versions[0], str):
-            raise ValueError('Riot не вернул версию League of Legends')
-        return versions[0]
+        try:
+            versions = get_json('https://ddragon.leagueoflegends.com/api/versions.json')
+            if versions and isinstance(versions[0], str):
+                return versions[0]
+        except (urllib.error.URLError, ValueError, KeyError, IndexError):
+            pass
+        page = fetch_public_page('https://www.leagueoflegends.com/en-us/news/game-updates/')
+        patches = re.findall(r'(?i)patch\s*(\d{2}\.\d{1,2})', page)
+        if not patches:
+            raise ValueError('Не найдены патч-ноты League of Legends')
+        latest = max(patches, key=lambda s: tuple(map(int, s.split('.'))))
+        year, patch = latest.split('.')
+        return str(int(year) - 10) + '.' + patch + '.1'
     if kind == 'riot_valorant':
         data = get_json('https://valorant-api.com/v1/version')['data']
         return data['version']
@@ -101,11 +110,19 @@ def read_version(g):
             raise ValueError('Не найдена официальная публикация Majestic об обновлении')
         return str(max(matches))
     if kind == 'fortnite_news':
-        page = fetch_public_page('https://www.fortnite.com/@epic/battle-royale')
-        versions = re.findall(r'(?i)v(\d{2}\.\d{2})[^<]{0,100}Update Notes', page)
-        if not versions:
-            raise ValueError('Не найдены опубликованные Epic Update Notes')
-        return max(versions, key=lambda s: tuple(map(int, s.split('.'))))
+        try:
+            page = fetch_public_page('https://www.fortnite.com/@epic/battle-royale')
+            versions = re.findall(r'(?i)v(\d{2}\.\d{2})[^<]{0,100}Update Notes', page)
+            if versions:
+                return max(versions, key=lambda s: tuple(map(int, s.split('.'))))
+        except urllib.error.URLError:
+            pass
+        # Public mirror of Epic's live build metadata when the Epic news page is blocked.
+        build = get_json('https://fortnite-api.com/v2/aes')['data']['build']
+        match = re.search(r'Fortnite\+Release-(\d{2}\.\d{2})-CL-(\d+)', build)
+        if not match:
+            raise ValueError('Не найдена текущая сборка Fortnite')
+        return match.group(1)
     if kind == 'genshin_news':
         query = urllib.parse.urlencode({'gids': 2, 'type': 1, 'page_size': 50})
         posts = get_json('https://bbs-api-os.hoyolab.com/community/post/wapi/getNewsList?' + query)['data']['list']
@@ -154,6 +171,8 @@ def safe_check(g):
         return g, v, None
     except urllib.error.HTTPError as e:
         return g, None, 'HTTP ' + str(e.code)
+    except urllib.error.URLError as e:
+        return g, None, 'Сеть: ' + str(e.reason)[:100]
     except Exception as e:
         # Do not print exception text: Telegram URLs can contain a token.
         return g, None, type(e).__name__
