@@ -1,28 +1,28 @@
 ﻿Охват проверки — 12.11.2026. Разовая проверка источников, не гарантия будущей доступности.
 
 Albion Online — Albion Launcher: Источник ответил
-Warface — Astrum Play: источник версии пока не подключён
+Warface — Astrum Play: Источник ответил
 Hearthstone — Battle.net: Источник ответил
 Heroes of the Storm — Battle.net: Источник ответил
 Overwatch 2 — Battle.net: Источник ответил
 StarCraft 2: Wings of Liberty — Battle.net: Источник ответил
-Escape from Tarkov — BSG: источник версии пока не подключён
-Escape from Tarkov Arena — BSG: источник версии пока не подключён
-Apex Legends — EA App: источник версии пока не подключён
-Fortnite — Epic Games: источник версии пока не подключён
-Rocket League — Epic Games: источник версии пока не подключён
-Sid Meier's Civilization 6 — Epic Games: источник версии пока не подключён
-World War Z — Epic Games: источник версии пока не подключён
-Genshin Impact — HoYoPlay: источник версии пока не подключён
+Escape from Tarkov — BSG: Источник ответил
+Escape from Tarkov Arena — BSG: Источник ответил
+Apex Legends — EA App: Источник ответил
+Fortnite — Epic Games: Источник ответил
+Rocket League — Epic Games: Источник ответил
+Sid Meier's Civilization 6 — Epic Games: Источник ответил
+World War Z — Epic Games: Источник ответил
+Genshin Impact — HoYoPlay: Источник ответил
 Minecraft: Java Edition — Legacy: Источник ответил
-Мир кораблей — Lesta: источник версии пока не подключён
-Мир танков — Lesta: источник версии пока не подключён
-Tanks Blitz — Lesta: источник версии пока не подключён
-MAJESTIC — MAJESTIC: источник версии пока не подключён
+Мир кораблей — Lesta: Источник ответил
+Мир танков — Lesta: Источник ответил
+Tanks Blitz — Lesta: Источник ответил
+MAJESTIC — MAJESTIC: Источник ответил
 OSU — OSU: Источник ответил
-League of Legends — Riot Client: источник версии пока не подключён
-Legends of Runeterra — Riot Client: источник версии пока не подключён
-Valorant — Riot Client: источник версии пока не подключён
+League of Legends — Riot Client: Источник ответил
+Legends of Runeterra — Riot Client: Источник ответил
+Valorant — Riot Client: Источник ответил
 Roblox — Roblox: Источник ответил
 Albion Online — Steam: Источник ответил
 Apex Legends — Steam: Источник ответил
@@ -30,8 +30,8 @@ Arena Breakout: Infinite — Steam: Источник ответил
 Brawlhalla — Steam: Источник ответил
 Call of Duty: Warzone 2 — Steam: Источник ответил
 Counter-Strike 2 — Steam: Источник ответил
-Crossout — Steam: Ошибка источника: KeyError
-Deadlock — Steam: Ошибка источника: ValueError
+Crossout — Steam: Источник ответил
+Deadlock — Steam: Источник ответил
 Deceit 2 — Steam: Источник ответил
 Delta Force — Steam: Источник ответил
 Destiny 2 — Steam: Источник ответил
@@ -112,7 +112,7 @@ Project Zomboid — Steam: Источник ответил
 Quarantine Zone: The Last Check — Steam: Источник ответил
 R.E.P.O. — Steam: Источник ответил
 Ready Or Not — Steam: Источник ответил
-RED FLAG — Steam: нужно уточнить Steam AppID
+RED FLAG — Steam: Исключена по запросу владельца
 RV There Yet? — Steam: Источник ответил
 Schedule I — Steam: Источник ответил
 Shift At Midnight — Steam: Источник ответил

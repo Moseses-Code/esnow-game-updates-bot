@@ -68,7 +68,7 @@
     "name": "Fortnite",
     "launcher": "Epic Games",
     "id": "game-010",
-    "reason": "источник версии пока не подключён"
+    "source": "fortnite_news"
   },
   {
     "name": "Rocket League",
@@ -95,7 +95,7 @@
     "name": "Genshin Impact",
     "launcher": "HoYoPlay",
     "id": "game-014",
-    "reason": "источник версии пока не подключён"
+    "source": "genshin_news"
   },
   {
     "name": "Minecraft: Java Edition",
@@ -146,7 +146,7 @@
     "name": "Legends of Runeterra",
     "launcher": "Riot Client",
     "id": "game-022",
-    "reason": "источник версии пока не подключён"
+    "source": "lor_assets"
   },
   {
     "name": "Valorant",

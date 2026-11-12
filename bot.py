@@ -33,6 +33,13 @@ def fetch(url, payload=None):
 def get_json(url):
     return json.loads(fetch(url))
 
+def head_etag(url):
+    with urllib.request.urlopen(urllib.request.Request(url, method='HEAD'), timeout=25) as response:
+        etag = response.headers.get('ETag')
+        if not etag:
+            raise ValueError('Источник не вернул ETag')
+        return etag
+
 def fetch_public_page(url):
     req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
     with urllib.request.urlopen(req, timeout=25) as response:
@@ -92,6 +99,29 @@ def read_version(g):
         if not matches:
             raise ValueError('Не найдена официальная публикация Majestic об обновлении')
         return str(max(matches))
+    if kind == 'fortnite_news':
+        page = fetch_public_page('https://www.fortnite.com/@epic/battle-royale')
+        versions = re.findall(r'(?i)v(\d{2}\.\d{2})[^<]{0,100}Update Notes', page)
+        if not versions:
+            raise ValueError('Не найдены опубликованные Epic Update Notes')
+        return max(versions, key=lambda s: tuple(map(int, s.split('.'))))
+    if kind == 'genshin_news':
+        query = urllib.parse.urlencode({'gids': 2, 'type': 1, 'page_size': 50})
+        posts = get_json('https://bbs-api-os.hoyolab.com/community/post/wapi/getNewsList?' + query)['data']['list']
+        versions = []
+        for item in posts:
+            subject = item['post']['subject']
+            match = re.search(r'(?i)Version\s+([0-9]+(?:\.[0-9]+)+)\s+Update Details', subject)
+            if match:
+                versions.append(match.group(1))
+        if not versions:
+            raise ValueError('Не найдены опубликованные HoYoLAB Update Details')
+        return max(versions, key=lambda s: tuple(map(int, s.split('.'))))
+    if kind == 'lor_assets':
+        # Riot says LoR Data Dragon assets are updated together with game releases.
+        parts = ['core', 'adventure'] + ['set' + str(i) for i in range(1, 10)]
+        tags = [head_etag('https://dd.b.pvp.net/latest/' + part + '-en_us.zip') for part in parts]
+        return hashlib.sha256('|'.join(tags).encode()).hexdigest()[:24]
     if kind == 'battle':
         raw = fetch('https://eu.version.battle.net/v2/products/' + g['product'] + '/versions')
         rows = [x.split('|') for x in raw.splitlines() if x and not x.startswith('#')]
@@ -344,6 +374,15 @@ def main():
             g.pop('reason', None)
         elif g['id'] == 'game-019':
             g['source'] = 'majestic_news'
+            g.pop('reason', None)
+        elif g['id'] == 'game-010':
+            g['source'] = 'fortnite_news'
+            g.pop('reason', None)
+        elif g['id'] == 'game-014':
+            g['source'] = 'genshin_news'
+            g.pop('reason', None)
+        elif g['id'] == 'game-022':
+            g['source'] = 'lor_assets'
             g.pop('reason', None)
     c = connect()
     now = time.time()
