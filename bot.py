@@ -201,10 +201,10 @@ def telegram(config, method, payload):
 
 
 MENU = {
-    'inline_keyboard': [[
-        {'text': 'Проверить обновления', 'icon_custom_emoji_id': '5429571366384842791', 'callback_data': 'check_updates', 'style': 'success'},
-        {'text': 'Сообщить об обновлении ❗', 'callback_data': 'publish_report'},
-    ]],
+    'inline_keyboard': [
+        [{'text': 'Проверить обновления', 'icon_custom_emoji_id': '5429571366384842791', 'callback_data': 'check_updates', 'style': 'success'}],
+        [{'text': 'Сообщить об обновлении ❗', 'callback_data': 'publish_report'}],
+    ],
 }
 
 
@@ -339,10 +339,23 @@ def main():
                         if callback:
                             telegram(config, 'answerCallbackQuery', {'callback_query_id': callback['id']})
                         if cmd == '/start':
+                            already = c.execute('SELECT 1 FROM subscribers WHERE chat_id=?', (chat_id,)).fetchone()
                             with c:
                                 c.execute('INSERT INTO subscribers VALUES (?,?,?,?) ON CONFLICT(chat_id) DO UPDATE SET username=excluded.username, first_name=excluded.first_name',
                                           (chat_id, now, m.get('from', {}).get('username'), m.get('from', {}).get('first_name')))
-                            send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nОтчёт приходит в <b>08:30</b> и <b>20:30</b> по Москве.\n\nКнопки ниже позволяют проверить игры и получить сводку в любое время.')
+                            if meta(c, 'keyboard_removed_' + str(chat_id)) != '1':
+                                cleanup = telegram(config, 'sendMessage', {'chat_id': chat_id, 'text': 'Обновляю меню…', 'reply_markup': {'remove_keyboard': True}})
+                                with c:
+                                    put(c, 'keyboard_removed_' + str(chat_id), '1')
+                                try:
+                                    telegram(config, 'deleteMessage', {'chat_id': chat_id, 'message_id': cleanup['message_id']})
+                                except Exception:
+                                    pass
+                            if not already:
+                                send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nОтчёт: <b>08:30 и 20:30 МСК</b>.\nПроверка и сводка — кнопками ниже.')
+                            elif now - last_manual.get(chat_id, 0) > 10:
+                                send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nОтчёт: <b>08:30 и 20:30 МСК</b>.')
+                            last_manual[chat_id] = now
                         elif not c.execute('SELECT 1 FROM subscribers WHERE chat_id=?', (chat_id,)).fetchone():
                             send(config, chat_id, '<b><tg-emoji emoji-id="5785358395531859004">🧊</tg-emoji> ESnow Updates</b>\n\nНажмите /start, чтобы получать отчёты.')
                         elif cmd in ('/status',) and now - last_manual.get(chat_id, 0) > 5:
