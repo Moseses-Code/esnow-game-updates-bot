@@ -1,5 +1,6 @@
 """Game release notifications to the owner or working group. Python 3.12+."""
 import concurrent.futures
+from datetime import datetime, timedelta, timezone
 import getpass
 import json
 import logging
@@ -13,6 +14,8 @@ import time
 from sources import fetch, read_version
 
 ROOT = Path(__file__).resolve().parent
+MOSCOW = timezone(timedelta(hours=3))
+VERSION = '2026.11.13-status'
 
 
 def api(config, method, payload):
@@ -30,6 +33,7 @@ def database(path):
             id INTEGER PRIMARY KEY, game TEXT NOT NULL, version TEXT NOT NULL,
             name TEXT NOT NULL, sent INTEGER NOT NULL DEFAULT 0,
             UNIQUE(game, version));
+        CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
     ''')
     return db
 
@@ -78,6 +82,48 @@ def check(game):
         return game, None, type(error).__name__
 
 
+def status_text(db, config, health):
+    def stamp(value):
+        return datetime.fromtimestamp(value, MOSCOW).strftime('%d.%m %H:%M:%S МСК')
+    target = 'рабочая группа' if config.get('chat_id') is not None else 'твой личный чат'
+    lines = ['🟢 ESnow работает', 'Версия: ' + VERSION,
+             'Запущен: ' + stamp(health['started'])]
+    if health['last_scan'] is None:
+        lines.append('Первая проверка ещё не завершена.')
+    else:
+        last = health['last_scan']
+        lines.extend(['Последняя проверка: ' + stamp(last['finished']),
+                      f"Источники ответили: {last['ok']}/{health['total']}",
+                      f"Ошибок источников: {last['errors']}"])
+    if health['scanning']:
+        lines.append(f"Сейчас проверено: {health['checked']}/{health['total']}")
+    lines.extend([f"Интервал: {config.get('check_interval_seconds', 300)} сек.",
+                  'Уведомления: ' + target])
+    queued = db.execute('SELECT COUNT(*) FROM notices WHERE sent=0').fetchone()[0]
+    lines.append(f'В очереди отправки: {queued}')
+    if health['delivery_error']:
+        lines.append('Ошибка отправки: ' + health['delivery_error'])
+    return '\n'.join(lines)
+
+
+def handle_commands(db, config, health, updates, offset):
+    for update in updates:
+        message = update.get('message', {})
+        chat = message.get('chat', {})
+        owner = config.get('owner_chat_id')
+        if (owner and chat.get('type') == 'private' and chat.get('id') == owner
+                and message.get('from', {}).get('id') == owner):
+            words = message.get('text', '').split()
+            command = words[0].split('@')[0] if words else ''
+            if command in ('/status', '/start'):
+                api(config, 'sendMessage', {'chat_id': owner, 'text': status_text(db, config, health)})
+        offset = max(offset, update['update_id'] + 1)
+        with db:
+            db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
+                       ('telegram_offset', str(offset)))
+    return offset
+
+
 def run():
     config = json.loads((ROOT / 'settings.json').read_text(encoding='utf-8'))
     destination(config)
@@ -91,11 +137,18 @@ def run():
     lock = socket.socket()
     lock.bind(('127.0.0.1', 47831))
     executor = concurrent.futures.ThreadPoolExecutor(max_workers=4)
+    commands = concurrent.futures.ThreadPoolExecutor(max_workers=1)
+    poll, next_poll = None, 0
+    saved = db.execute("SELECT value FROM metadata WHERE key='telegram_offset'").fetchone()
+    offset = int(saved[0]) if saved else 0
+    health = dict(started=time.time(), last_scan=None, scanning=False,
+                  checked=0, ok=0, errors=0, total=len(games), delivery_error=None)
     pending, next_scan, next_delivery = {}, 0, 0
     try:
         while True:
             now = time.monotonic()
             if not pending and now >= next_scan:
+                health.update(scanning=True, checked=0, ok=0, errors=0)
                 pending = {executor.submit(check, game): game for game in games}
                 next_scan = now + interval
             for future in list(pending):
@@ -103,19 +156,41 @@ def run():
                     continue
                 game, version, error = future.result()
                 del pending[future]
+                health['checked'] += 1
                 if error:
+                    health['errors'] += 1
                     logging.warning('%s: %s', game['name'], error)
                 else:
+                    health['ok'] += 1
                     remember(db, game, version)
+            if health['scanning'] and not pending:
+                health['last_scan'] = dict(finished=time.time(), ok=health['ok'], errors=health['errors'])
+                health['scanning'] = False
+            if poll is not None and poll.done():
+                try:
+                    offset = handle_commands(db, config, health, poll.result(), offset)
+                    next_poll = now + 1
+                except Exception as error:
+                    logging.warning('Commands: %s', type(error).__name__)
+                    saved = db.execute("SELECT value FROM metadata WHERE key='telegram_offset'").fetchone()
+                    offset = int(saved[0]) if saved else offset
+                    next_poll = now + 10
+                poll = None
+            if config.get('owner_chat_id') and poll is None and now >= next_poll:
+                poll = commands.submit(api, config, 'getUpdates', {
+                    'offset': offset, 'timeout': 0, 'allowed_updates': ['message']})
             if now >= next_delivery:
                 try:
                     deliver(db, config)
+                    health['delivery_error'] = None
                     next_delivery = now + 2
                 except Exception as error:
+                    health['delivery_error'] = type(error).__name__
                     logging.warning('Delivery: %s', type(error).__name__)
                     next_delivery = now + 30
             time.sleep(1)
     finally:
+        commands.shutdown(wait=True)
         executor.shutdown(wait=True)
         db.close()
         lock.close()

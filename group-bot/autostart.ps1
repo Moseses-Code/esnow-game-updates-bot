@@ -6,7 +6,7 @@ $action = New-ScheduledTaskAction -Execute "$PSScriptRoot\runtime\python.exe" -A
 $trigger = New-ScheduledTaskTrigger -AtStartup
 $principal = New-ScheduledTaskPrincipal -UserId 'SYSTEM' -LogonType ServiceAccount
 $settings = New-ScheduledTaskSettingsSet -StartWhenAvailable -RestartCount 999 -RestartInterval (New-TimeSpan -Minutes 1) -ExecutionTimeLimit ([TimeSpan]::Zero) -MultipleInstances IgnoreNew -AllowStartIfOnBatteries -DontStopIfGoingOnBatteries
-Register-ScheduledTask -TaskName 'ESnowGameUpdates' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'ESnow: game update reports at 08:30 and 20:30 Moscow time.' -Force | Out-Null
+Register-ScheduledTask -TaskName 'ESnowGameUpdates' -Action $action -Trigger $trigger -Principal $principal -Settings $settings -Description 'ESnow: notify on detected game updates; private /status command.' -Force | Out-Null
 Start-ScheduledTask -TaskName 'ESnowGameUpdates'
 Write-Host 'Autostart installed and bot started. Check /status in Telegram.'
 Read-Host 'Press Enter to close'

@@ -100,5 +100,59 @@ class Setup(unittest.TestCase):
             self.assertEqual(config['owner_chat_id'], 456)
 
 
+class Status(unittest.TestCase):
+    def setUp(self):
+        self.db = bot.database(':memory:')
+        self.config = {'owner_chat_id': 456}
+        self.health = dict(started=0, last_scan=None, scanning=True, checked=2,
+                           total=122, delivery_error=None)
+
+    def tearDown(self):
+        self.db.close()
+
+    def test_first_scan_and_moscow_time(self):
+        text = bot.status_text(self.db, self.config, self.health)
+        self.assertIn('01.01 03:00:00 МСК', text)
+        self.assertIn('Первая проверка ещё не завершена', text)
+        self.assertIn('Сейчас проверено: 2/122', text)
+        self.assertIn('твой личный чат', text)
+
+    def test_completed_scan_queue_group_and_delivery_error(self):
+        self.config['chat_id'] = -123
+        self.health.update(scanning=False, last_scan=dict(finished=60, ok=120, errors=2),
+                           delivery_error='URLError')
+        bot.remember(self.db, {'id': 'pubg', 'name': 'PUBG'}, '1')
+        bot.remember(self.db, {'id': 'pubg', 'name': 'PUBG'}, '2')
+        text = bot.status_text(self.db, self.config, self.health)
+        for expected in ('120/122', 'Ошибок источников: 2', 'рабочая группа',
+                         'В очереди отправки: 1', 'Ошибка отправки: URLError'):
+            self.assertIn(expected, text)
+        self.assertNotIn('Сейчас проверено:', text)
+
+    def test_commands_only_in_owner_private_chat_and_offset_persisted(self):
+        updates = []
+        for i, (sender, chat, kind, text) in enumerate([
+                (999, 999, 'private', '/status'), (456, -123, 'supergroup', '/status'),
+                (456, 456, 'private', '/status'), (456, 456, 'private', '/start'),
+                (456, 456, 'private', 'PUBG')], start=1):
+            updates.append({'update_id': i, 'message': {'from': {'id': sender},
+                            'chat': {'id': chat, 'type': kind}, 'text': text}})
+        with patch.object(bot, 'api') as api:
+            offset = bot.handle_commands(self.db, self.config, self.health, updates, 0)
+            self.assertEqual(api.call_count, 2)
+            for call in api.call_args_list:
+                self.assertEqual(call.args[2]['chat_id'], 456)
+                self.assertIn('ESnow работает', call.args[2]['text'])
+        self.assertEqual(offset, 6)
+        self.assertEqual(self.db.execute('SELECT value FROM metadata').fetchone()[0], '6')
+
+    def test_failed_status_reply_is_not_acknowledged(self):
+        update = {'update_id': 10, 'message': {'from': {'id': 456},
+                  'chat': {'id': 456, 'type': 'private'}, 'text': '/status'}}
+        with patch.object(bot, 'api', side_effect=RuntimeError), self.assertRaises(RuntimeError):
+            bot.handle_commands(self.db, self.config, self.health, [update], 0)
+        self.assertIsNone(self.db.execute('SELECT value FROM metadata').fetchone())
+
+
 if __name__ == '__main__':
     unittest.main()
