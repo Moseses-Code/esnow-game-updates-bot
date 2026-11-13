@@ -1,4 +1,4 @@
-"""Group-only game release notifications. Python 3.12+, standard library."""
+"""Game release notifications to the owner or working group. Python 3.12+."""
 import concurrent.futures
 import getpass
 import json
@@ -45,10 +45,24 @@ def remember(db, game, version):
                    (game['id'], version))
 
 
+def destination(config):
+    """A bound group takes precedence; delivery failures never change the recipient."""
+    if config.get('chat_id') is not None:
+        chat_id = int(config['chat_id'])
+        if chat_id >= 0:
+            raise ValueError('Working group ID must be negative')
+        return chat_id
+    owner = int(config.get('owner_chat_id', 0))
+    if owner <= 0:
+        raise ValueError('Use SETUP.cmd to connect your private chat')
+    return owner
+
+
 def deliver(db, config):
+    chat_id = destination(config)
     for row in db.execute('SELECT id,name FROM notices WHERE sent=0 ORDER BY id').fetchall():
         # Only the game name goes to the working chat; no markup, buttons or status messages.
-        api(config, 'sendMessage', {'chat_id': config['chat_id'], 'text': row[1]})
+        api(config, 'sendMessage', {'chat_id': chat_id, 'text': row[1]})
         with db:
             db.execute('UPDATE notices SET sent=1 WHERE id=?', (row[0],))
 
@@ -66,8 +80,7 @@ def check(game):
 
 def run():
     config = json.loads((ROOT / 'settings.json').read_text(encoding='utf-8'))
-    if config.get('chat_type') not in ('group', 'supergroup') or int(config['chat_id']) >= 0:
-        raise ValueError('Use SETUP.cmd to connect a working group')
+    destination(config)
     interval = int(config.get('check_interval_seconds', 300))
     if interval < 60:
         raise ValueError('Check interval must be at least 60 seconds')
@@ -108,13 +121,27 @@ def run():
         lock.close()
 
 
-def setup():
-    token = getpass.getpass('Telegram token (hidden): ').strip()
-    config = {'token': token, 'check_interval_seconds': 300}
+def setup(group=False):
+    settings = ROOT / 'settings.json'
+    if group:
+        config = json.loads(settings.read_text(encoding='utf-8'))
+        if not config.get('owner_chat_id'):
+            raise ValueError('Run SETUP.cmd to connect your private chat first')
+    else:
+        token = getpass.getpass('Telegram token (hidden): ').strip()
+        config = {'token': token, 'check_interval_seconds': 300}
+        if settings.exists():
+            previous = json.loads(settings.read_text(encoding='utf-8'))
+            if previous.get('token') == token:
+                config = previous
     me = api(config, 'getMe', {})
     code = secrets.token_hex(8)
-    print('Add @' + me['username'] + ' to the working group. Allow sending messages.')
-    print('Send this command IN THAT GROUP: /connect@' + me['username'] + ' ' + code)
+    if group:
+        print('Add @' + me['username'] + ' to the working group. Allow sending messages.')
+        print('Send as group administrator from your linked account: /connect@' + me['username'] + ' ' + code)
+    else:
+        print('Open your private chat: https://t.me/' + me['username'] + '?start=' + code)
+        print('Press START, or send this command privately: /start ' + code)
     offset, deadline = 0, time.monotonic() + 600
     while time.monotonic() < deadline:
         updates = api(config, 'getUpdates', {'offset': offset, 'timeout': 15, 'allowed_updates': ['message']})
@@ -122,31 +149,47 @@ def setup():
             offset = update['update_id'] + 1
             message = update.get('message', {})
             chat = message.get('chat', {})
-            if chat.get('type') not in ('group', 'supergroup'):
+            allowed_types = ('group', 'supergroup') if group else ('private',)
+            if chat.get('type') not in allowed_types:
                 continue
             command = message.get('text', '').strip()
-            if command not in ('/connect ' + code, '/connect@' + me['username'] + ' ' + code):
+            verb = '/connect' if group else '/start'
+            if command not in (verb + ' ' + code, verb + '@' + me['username'] + ' ' + code):
                 continue
             if message.get('sender_chat') or message.get('from', {}).get('is_bot'):
                 continue
-            member = api(config, 'getChatMember', {'chat_id': chat['id'], 'user_id': message['from']['id']})
-            if member['status'] not in ('creator', 'administrator'):
-                print('Connection command must be sent by a group administrator.')
-                continue
-            config.update(chat_id=chat['id'], chat_type=chat['type'])
-            (ROOT / 'settings.json').write_text(json.dumps(config, indent=2), encoding='utf-8')
+            sender = message.get('from', {}).get('id')
+            if group:
+                if sender != config['owner_chat_id']:
+                    continue
+                member = api(config, 'getChatMember', {'chat_id': chat['id'], 'user_id': sender})
+                if member['status'] not in ('creator', 'administrator'):
+                    print('Connection command must be sent by a group administrator.')
+                    continue
+                config.update(chat_id=chat['id'], chat_type=chat['type'])
+            else:
+                if sender != chat['id'] or sender <= 0:
+                    continue
+                config['owner_chat_id'] = chat['id']
+            destination(config)
+            settings.write_text(json.dumps(config, indent=2), encoding='utf-8')
             api(config, 'getUpdates', {'offset': offset, 'timeout': 0, 'allowed_updates': ['message']})
             print('Connected to: ' + chat.get('title', str(chat['id'])))
             print('Run AUTOSTART.cmd. First scan establishes baseline without sending old updates.')
             return
-    raise RuntimeError('Connection timed out; run SETUP.cmd again')
+    raise RuntimeError('Connection timed out; run the connection script again')
 
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, handlers=[RotatingFileHandler(
         ROOT / 'bot.log', maxBytes=2_000_000, backupCount=3, encoding='utf-8')])
     try:
-        setup() if sys.argv[1:] == ['setup'] else run()
+        if sys.argv[1:] == ['setup']:
+            setup()
+        elif sys.argv[1:] == ['connect-group']:
+            setup(group=True)
+        else:
+            run()
     except KeyboardInterrupt:
         pass
     except Exception as error:
