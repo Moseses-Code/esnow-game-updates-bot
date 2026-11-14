@@ -11,11 +11,12 @@ import socket
 import sqlite3
 import sys
 import time
+import monitoring
 from sources import fetch, read_version, source_quality
 
 ROOT = Path(__file__).resolve().parent
 MOSCOW = timezone(timedelta(hours=3))
-VERSION = '2026.11.14-accuracy'
+VERSION = '2026.11.14-monitoring'
 
 
 def api(config, method, payload):
@@ -45,6 +46,7 @@ def database(path):
             db.execute('INSERT INTO notices_new SELECT id,game,version,name,sent FROM notices')
             db.execute('DROP TABLE notices')
             db.execute('ALTER TABLE notices_new RENAME TO notices')
+    monitoring.initialise(db)
     return db
 
 
@@ -56,8 +58,8 @@ def remember(db, game, version):
         saved = db.execute('SELECT revision FROM source_revisions WHERE game=?', (game['id'],)).fetchone()
         old_revision = saved[0] if saved else '1'
         if previous and previous[0] != version and revision == old_revision:
-            db.execute('INSERT INTO notices(game,version,name) VALUES (?,?,?)',
-                       (game['id'], version, game['name']))
+            db.execute('INSERT INTO notices(game,version,name,detected_at) VALUES (?,?,?,?)',
+                       (game['id'], version, game['name'], time.time()))
         db.execute('INSERT INTO versions VALUES (?,?) ON CONFLICT(game) DO UPDATE SET value=excluded.value',
                    (game['id'], version))
         db.execute('INSERT INTO source_revisions VALUES (?,?) ON CONFLICT(game) DO UPDATE SET revision=excluded.revision',
@@ -81,9 +83,18 @@ def deliver(db, config):
     chat_id = destination(config)
     for row in db.execute('SELECT id,name FROM notices WHERE sent=0 ORDER BY id').fetchall():
         # Only the game name goes to the working chat; no markup, buttons or status messages.
-        api(config, 'sendMessage', {'chat_id': chat_id, 'text': row[1]})
+        try:
+            api(config, 'sendMessage', {'chat_id': chat_id, 'text': row[1]})
+        except Exception as error:
+            with db:
+                db.execute('UPDATE notices SET last_error=?,target_chat=? WHERE id=?',
+                           (type(error).__name__, chat_id, row[0]))
+            monitoring.observe(db, 'delivery', 'Доставка обновлений', type(error).__name__)
+            raise
         with db:
-            db.execute('UPDATE notices SET sent=1 WHERE id=?', (row[0],))
+            db.execute('UPDATE notices SET sent=1,sent_at=?,last_error=NULL,target_chat=? WHERE id=?',
+                       (time.time(), chat_id, row[0]))
+        monitoring.observe(db, 'delivery', 'Доставка обновлений', None)
 
 
 def check(game):
@@ -122,6 +133,7 @@ def status_text(db, config, health):
         lines.append(f"Косвенных источников: {health['indirect']}. Ограничения: /sources")
     if health.get('unavailable'):
         lines.append(f"Без подтверждённого источника: {health['unavailable']}. Подробнее: /sources")
+    lines.append('История: /last · Проверка доставки: /test')
     return '\n'.join(lines)
 
 
@@ -156,6 +168,12 @@ def handle_commands(db, config, health, updates, offset):
                         name + ': ' + error for name, error in sorted(health['source_errors'].items()))
                 for start in range(0, len(report), 3500):
                     api(config, 'sendMessage', {'chat_id': owner, 'text': report[start:start + 3500]})
+            elif command == '/last':
+                report = monitoring.history(db)
+                for start in range(0, len(report), 3500):
+                    api(config, 'sendMessage', {'chat_id': owner, 'text': report[start:start + 3500]})
+            elif command == '/test':
+                monitoring.test_delivery(db, config, update['update_id'], destination(config), api)
         offset = max(offset, update['update_id'] + 1)
         with db:
             db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
@@ -186,7 +204,7 @@ def run():
                   checked=0, ok=0, errors=0, total=len(games), delivery_error=None)
     health.update(games=games, source_errors={}, indirect=sum(source_quality(g) == 'indirect' for g in games),
                   unavailable=sum(source_quality(g) == 'unavailable' for g in games))
-    pending, next_scan, next_delivery = {}, 0, 0
+    pending, next_scan, next_delivery, next_diagnostics = {}, 0, 0, 0
     try:
         while True:
             now = time.monotonic()
@@ -200,6 +218,7 @@ def run():
                 game, version, error = future.result()
                 del pending[future]
                 health['checked'] += 1
+                monitoring.observe(db, 'source:' + game['id'], game['name'], error)
                 if error:
                     health['source_errors'][game['name']] = error
                     health['errors'] += 1
@@ -233,6 +252,13 @@ def run():
                     health['delivery_error'] = type(error).__name__
                     logging.warning('Delivery: %s', type(error).__name__)
                     next_delivery = now + 30
+            if now >= next_diagnostics:
+                try:
+                    monitoring.send_diagnostics(db, config, api)
+                    next_diagnostics = now + 10
+                except Exception as error:
+                    logging.warning('Diagnostics: %s', type(error).__name__)
+                    next_diagnostics = now + 60
             time.sleep(1)
     finally:
         commands.shutdown(wait=True)
