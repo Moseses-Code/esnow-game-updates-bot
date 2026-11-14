@@ -1,5 +1,6 @@
 import unittest
 import json
+import sqlite3
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from unittest.mock import patch
@@ -69,6 +70,43 @@ class Notifications(unittest.TestCase):
         for config in ({}, {'owner_chat_id': -12}, {'chat_id': 123, 'owner_chat_id': 456}):
             with self.subTest(config=config), self.assertRaises(ValueError):
                 bot.destination(config)
+
+    def test_repeated_release_after_rollback_is_delivered(self):
+        for version in ('A', 'B', 'A', 'B', 'B'):
+            bot.remember(self.db, self.game, version)
+        self.assertEqual(self.db.execute('SELECT version FROM notices ORDER BY id').fetchall(),
+                         [('B',), ('A',), ('B',)])
+
+    def test_source_change_establishes_baseline_without_fake_update(self):
+        bot.remember(self.db, self.game, 'old-format')
+        self.game['source_revision'] = 2
+        bot.remember(self.db, self.game, 'new-format-1')
+        self.assertEqual(self.db.execute('SELECT COUNT(*) FROM notices').fetchone()[0], 0)
+        bot.remember(self.db, self.game, 'new-format-2')
+        self.assertEqual(self.db.execute('SELECT version FROM notices').fetchall(), [('new-format-2',)])
+
+    def test_legacy_database_migrates_queue_and_versions_without_resending(self):
+        with TemporaryDirectory() as folder:
+            path = Path(folder) / 'state.sqlite3'
+            legacy = sqlite3.connect(path)
+            legacy.executescript('''
+                CREATE TABLE versions (game TEXT PRIMARY KEY, value TEXT NOT NULL);
+                INSERT INTO versions VALUES ('cs2', 'B');
+                CREATE TABLE notices (id INTEGER PRIMARY KEY, game TEXT NOT NULL,
+                    version TEXT NOT NULL, name TEXT NOT NULL, sent INTEGER NOT NULL DEFAULT 0,
+                    UNIQUE(game, version));
+                INSERT INTO notices VALUES (1, 'cs2', 'A', 'Counter-Strike 2', 1);
+                INSERT INTO notices VALUES (2, 'cs2', 'B', 'Counter-Strike 2', 0);
+            ''')
+            legacy.close()
+            db = bot.database(path)
+            bot.remember(db, self.game, 'A')
+            self.assertEqual(db.execute('SELECT version,sent FROM notices ORDER BY id').fetchall(),
+                             [('A', 1), ('B', 0), ('A', 0)])
+            db.close()
+            db = bot.database(path)
+            self.assertEqual(db.execute('SELECT COUNT(*) FROM notices').fetchone()[0], 3)
+            db.close()
 
 
 class Setup(unittest.TestCase):

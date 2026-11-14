@@ -11,11 +11,11 @@ import socket
 import sqlite3
 import sys
 import time
-from sources import fetch, read_version
+from sources import fetch, read_version, source_quality
 
 ROOT = Path(__file__).resolve().parent
 MOSCOW = timezone(timedelta(hours=3))
-VERSION = '2026.11.13-status'
+VERSION = '2026.11.14-accuracy'
 
 
 def api(config, method, payload):
@@ -31,10 +31,20 @@ def database(path):
         CREATE TABLE IF NOT EXISTS versions (game TEXT PRIMARY KEY, value TEXT NOT NULL);
         CREATE TABLE IF NOT EXISTS notices (
             id INTEGER PRIMARY KEY, game TEXT NOT NULL, version TEXT NOT NULL,
-            name TEXT NOT NULL, sent INTEGER NOT NULL DEFAULT 0,
-            UNIQUE(game, version));
+            name TEXT NOT NULL, sent INTEGER NOT NULL DEFAULT 0);
         CREATE TABLE IF NOT EXISTS metadata (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS source_revisions (game TEXT PRIMARY KEY, revision TEXT NOT NULL);
     ''')
+    # Old uniqueness by (game, version) suppressed a real A -> B -> A -> B transition.
+    schema = db.execute("SELECT sql FROM sqlite_master WHERE name='notices'").fetchone()[0]
+    if 'UNIQUE' in schema.upper():
+        db.execute('BEGIN IMMEDIATE')
+        with db:
+            db.execute('CREATE TABLE notices_new (id INTEGER PRIMARY KEY, game TEXT NOT NULL, '
+                       'version TEXT NOT NULL, name TEXT NOT NULL, sent INTEGER NOT NULL DEFAULT 0)')
+            db.execute('INSERT INTO notices_new SELECT id,game,version,name,sent FROM notices')
+            db.execute('DROP TABLE notices')
+            db.execute('ALTER TABLE notices_new RENAME TO notices')
     return db
 
 
@@ -42,11 +52,16 @@ def remember(db, game, version):
     """Persist the version and notification atomically; first reading is a baseline."""
     with db:
         previous = db.execute('SELECT value FROM versions WHERE game=?', (game['id'],)).fetchone()
-        if previous and previous[0] != version:
-            db.execute('INSERT OR IGNORE INTO notices(game,version,name) VALUES (?,?,?)',
+        revision = str(game.get('source_revision', 1))
+        saved = db.execute('SELECT revision FROM source_revisions WHERE game=?', (game['id'],)).fetchone()
+        old_revision = saved[0] if saved else '1'
+        if previous and previous[0] != version and revision == old_revision:
+            db.execute('INSERT INTO notices(game,version,name) VALUES (?,?,?)',
                        (game['id'], version, game['name']))
         db.execute('INSERT INTO versions VALUES (?,?) ON CONFLICT(game) DO UPDATE SET value=excluded.value',
                    (game['id'], version))
+        db.execute('INSERT INTO source_revisions VALUES (?,?) ON CONFLICT(game) DO UPDATE SET revision=excluded.revision',
+                   (game['id'], revision))
 
 
 def destination(config):
@@ -103,6 +118,23 @@ def status_text(db, config, health):
     lines.append(f'В очереди отправки: {queued}')
     if health['delivery_error']:
         lines.append('Ошибка отправки: ' + health['delivery_error'])
+    if health.get('indirect'):
+        lines.append(f"Косвенных источников: {health['indirect']}. Ограничения: /sources")
+    if health.get('unavailable'):
+        lines.append(f"Без подтверждённого источника: {health['unavailable']}. Подробнее: /sources")
+    return '\n'.join(lines)
+
+
+def source_report(games):
+    lines = ['Источники ESnow',
+             'Успешный ответ источника не гарантирует обновление нужного лаунчера.',
+             'Steam: публичная ветка через SteamCMD API; зеркало может запаздывать.',
+             'Fortnite: полная сборка через сторонний Fortnite-API.',
+             'Battle.net: EU; Minecraft, osu!, Roblox, Albion: рабочие каналы издателей.',
+             '', 'Ограничения по играм:']
+    for game in games:
+        if source_quality(game) != 'build':
+            lines.append(game['name'] + ': ' + game.get('source_note', 'косвенный источник, не манифест установленного клиента'))
     return '\n'.join(lines)
 
 
@@ -117,6 +149,13 @@ def handle_commands(db, config, health, updates, offset):
             command = words[0].split('@')[0] if words else ''
             if command in ('/status', '/start'):
                 api(config, 'sendMessage', {'chat_id': owner, 'text': status_text(db, config, health)})
+            elif command == '/sources':
+                report = source_report(health.get('games', []))
+                if health.get('source_errors'):
+                    report += '\n\nПоследние ошибки:\n' + '\n'.join(
+                        name + ': ' + error for name, error in sorted(health['source_errors'].items()))
+                for start in range(0, len(report), 3500):
+                    api(config, 'sendMessage', {'chat_id': owner, 'text': report[start:start + 3500]})
         offset = max(offset, update['update_id'] + 1)
         with db:
             db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
@@ -132,6 +171,8 @@ def run():
         raise ValueError('Check interval must be at least 60 seconds')
     games = [g for g in json.loads((ROOT / 'games.json').read_text(encoding='utf-8'))
              if g.get('enabled', True)]
+    if len({g['id'] for g in games}) != len(games):
+        raise ValueError('Duplicate game IDs in games.json')
     db = database(ROOT / 'state.sqlite3')
     # Same port as the test bot: they must not run together on this PC.
     lock = socket.socket()
@@ -143,6 +184,8 @@ def run():
     offset = int(saved[0]) if saved else 0
     health = dict(started=time.time(), last_scan=None, scanning=False,
                   checked=0, ok=0, errors=0, total=len(games), delivery_error=None)
+    health.update(games=games, source_errors={}, indirect=sum(source_quality(g) == 'indirect' for g in games),
+                  unavailable=sum(source_quality(g) == 'unavailable' for g in games))
     pending, next_scan, next_delivery = {}, 0, 0
     try:
         while True:
@@ -158,9 +201,11 @@ def run():
                 del pending[future]
                 health['checked'] += 1
                 if error:
+                    health['source_errors'][game['name']] = error
                     health['errors'] += 1
                     logging.warning('%s: %s', game['name'], error)
                 else:
+                    health['source_errors'].pop(game['name'], None)
                     health['ok'] += 1
                     remember(db, game, version)
             if health['scanning'] and not pending:

@@ -9,8 +9,9 @@
     "name": "Warface",
     "launcher": "Astrum Play",
     "id": "game-002",
-    "source": "steam",
-    "appid": 291480
+    "source": "warface_news",
+    "source_revision": 2,
+    "source_note": "Новости Warface RU; ПТС и анонсы исключаются. Полное покрытие исправлений не подтверждено."
   },
   {
     "name": "Hearthstone",
@@ -49,53 +50,61 @@
     "launcher": "BSG",
     "id": "game-007",
     "source": "steam",
-    "appid": 3932890
+    "appid": 3932890,
+    "source_note": "Сигнал Steam, а установлен BSG. Совпадение выпуска в этом лаунчере НЕ подтверждено."
   },
   {
     "name": "Escape from Tarkov Arena",
     "launcher": "BSG",
     "id": "game-008",
-    "source": "tarkov_arena_news"
+    "source": "tarkov_arena_news",
+    "source_note": "Официальные патч-ноты: время установки на боевые серверы не подтверждается."
   },
   {
     "name": "Apex Legends",
     "launcher": "EA App",
     "id": "game-009",
     "source": "steam",
-    "appid": 1172470
+    "appid": 1172470,
+    "source_note": "Сигнал Steam, а установлен EA App. Совпадение выпуска в этом лаунчере НЕ подтверждено."
   },
   {
     "name": "Fortnite",
     "launcher": "Epic Games",
     "id": "game-010",
-    "source": "fortnite_news"
+    "source": "fortnite_build",
+    "source_revision": 2
   },
   {
     "name": "Rocket League",
     "launcher": "Epic Games",
     "id": "game-011",
     "source": "steam",
-    "appid": 252950
+    "appid": 252950,
+    "source_note": "Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено."
   },
   {
     "name": "Sid Meier's Civilization 6",
     "launcher": "Epic Games",
     "id": "game-012",
     "source": "steam",
-    "appid": 289070
+    "appid": 289070,
+    "source_note": "Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено."
   },
   {
     "name": "World War Z",
     "launcher": "Epic Games",
     "id": "game-013",
     "source": "steam",
-    "appid": 699130
+    "appid": 699130,
+    "source_note": "Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено."
   },
   {
     "name": "Genshin Impact",
     "launcher": "HoYoPlay",
     "id": "game-014",
-    "source": "genshin_news"
+    "source": "genshin_news",
+    "source_note": "Официальные Update Details: не манифест HoYoPlay, возможна публикация до выпуска."
   },
   {
     "name": "Minecraft: Java Edition",
@@ -108,27 +117,31 @@
     "launcher": "Lesta",
     "id": "game-016",
     "source": "lesta_wiki",
-    "page": "Мир_кораблей:Список_обновлений"
+    "page": "Мир_кораблей:Список_обновлений",
+    "source_note": "Официальная Wiki: возможны задержки и описания будущих версий."
   },
   {
     "name": "Мир танков",
     "launcher": "Lesta",
     "id": "game-017",
     "source": "lesta_wiki",
-    "page": "Мир_танков:Список_обновлений"
+    "page": "Мир_танков:Список_обновлений",
+    "source_note": "Официальная Wiki: возможны задержки и описания будущих версий."
   },
   {
     "name": "Tanks Blitz",
     "launcher": "Lesta",
     "id": "game-018",
     "source": "lesta_wiki",
-    "page": "Tanks_Blitz:Список_обновлений"
+    "page": "Tanks_Blitz:Список_обновлений",
+    "source_note": "Официальная Wiki: возможны задержки и описания будущих версий."
   },
   {
     "name": "MAJESTIC",
     "launcher": "MAJESTIC",
     "id": "game-019",
-    "source": "majestic_news"
+    "source": "majestic_news",
+    "source_note": "Официальные новости: не подтверждают версию клиента Enhanced."
   },
   {
     "name": "OSU",
@@ -140,19 +153,22 @@
     "name": "League of Legends",
     "launcher": "Riot Client",
     "id": "game-021",
-    "source": "riot_lol"
+    "source": "riot_lol",
+    "source_note": "Riot Data Dragon: ресурсы, не региональная версия клиента; без подстановки версии из анонсов."
   },
   {
     "name": "Legends of Runeterra",
     "launcher": "Riot Client",
     "id": "game-022",
-    "source": "lor_assets"
+    "source": "lor_assets",
+    "source_note": "ETag ресурсов Riot: изменение CDN не гарантирует обновление клиента."
   },
   {
     "name": "Valorant",
     "launcher": "Riot Client",
     "id": "game-023",
-    "source": "riot_valorant"
+    "source": "riot_valorant",
+    "source_note": "Сторонний Valorant-API: не подтверждает регион и Windows-манифест."
   },
   {
     "name": "Roblox",
@@ -179,7 +195,9 @@
     "launcher": "Steam",
     "id": "game-029",
     "appid": 1938090,
-    "source": "steam"
+    "source": "steam",
+    "signal_only": true,
+    "source_note": "Общий Steam AppID Call of Duty HQ: изменение сборки не обязательно относится к Warzone."
   },
   {
     "name": "Counter-Strike 2",
@@ -193,14 +211,18 @@
     "launcher": "Steam",
     "id": "game-031",
     "appid": 386180,
-    "source": "steam_patch_news"
+    "source": "steam_patch_news",
+    "source_revision": 2,
+    "source_note": "Официальные новости Steam с фильтром анонсов; сборки без новости могут быть пропущены."
   },
   {
     "name": "Deadlock",
     "launcher": "Steam",
     "id": "game-032",
     "appid": 1422450,
-    "source": "steam_patch_news"
+    "source": "steam_patch_news",
+    "source_revision": 2,
+    "source_note": "Официальные новости Steam с фильтром анонсов; сборки без новости могут быть пропущены."
   },
   {
     "name": "Deceit 2",

@@ -5,3 +5,6 @@ settings.json
 state.sqlite3
 python-runtime.zip
 runtime/
+
+# Local read-only source audit
+source-check.json
