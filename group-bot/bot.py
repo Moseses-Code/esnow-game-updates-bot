@@ -16,10 +16,25 @@ from sources import fetch, read_version, source_quality
 
 ROOT = Path(__file__).resolve().parent
 MOSCOW = timezone(timedelta(hours=3))
-VERSION = '2026.11.14-monitoring'
+VERSION = '2026.11.14-keyboard'
+BUTTON_COMMANDS = {
+    '📊 Статус': '/status',
+    '🕘 Последние обновления': '/last',
+    '🧪 Проверить доставку': '/test',
+    '🔎 Источники': '/sources',
+}
+
+
+def command_keyboard():
+    labels = list(BUTTON_COMMANDS)
+    return {'keyboard': [[{'text': label}] for label in labels],
+            'resize_keyboard': True, 'is_persistent': True, 'one_time_keyboard': False}
 
 
 def api(config, method, payload):
+    if (method == 'sendMessage' and config.get('owner_chat_id')
+            and payload.get('chat_id') == config['owner_chat_id']):
+        payload = {**payload, 'reply_markup': command_keyboard()}
     response = json.loads(fetch('https://api.telegram.org/bot' + config['token'] + '/' + method, payload))
     if not response.get('ok'):
         raise RuntimeError('Telegram rejected request')
@@ -157,8 +172,9 @@ def handle_commands(db, config, health, updates, offset):
         owner = config.get('owner_chat_id')
         if (owner and chat.get('type') == 'private' and chat.get('id') == owner
                 and message.get('from', {}).get('id') == owner):
-            words = message.get('text', '').split()
-            command = words[0].split('@')[0] if words else ''
+            text = message.get('text', '').strip()
+            words = text.split()
+            command = BUTTON_COMMANDS.get(text, words[0].split('@')[0] if words else '')
             if command in ('/status', '/start'):
                 api(config, 'sendMessage', {'chat_id': owner, 'text': status_text(db, config, health)})
             elif command == '/sources':
@@ -174,6 +190,9 @@ def handle_commands(db, config, health, updates, offset):
                     api(config, 'sendMessage', {'chat_id': owner, 'text': report[start:start + 3500]})
             elif command == '/test':
                 monitoring.test_delivery(db, config, update['update_id'], destination(config), api)
+            elif 'Проверить обновления' in text or 'Сообщить об обновлении' in text or 'Опубликовать сводку' in text:
+                api(config, 'sendMessage', {'chat_id': owner, 'text':
+                    'Клавиатура обновлена. Выбери команду ниже. Игры проверяются автоматически.'})
         offset = max(offset, update['update_id'] + 1)
         with db:
             db.execute('INSERT INTO metadata VALUES (?,?) ON CONFLICT(key) DO UPDATE SET value=excluded.value',
