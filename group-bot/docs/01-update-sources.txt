@@ -1,0 +1,1087 @@
+ESnow — ОТКУДА И КАК ПОЛУЧАЕТСЯ ИНФОРМАЦИЯ ОБ ОБНОВЛЕНИЯХ
+Дата описания: 25.11.2026.
+Основание: текущие group-bot/sources.py и games.json в main репозитория Moseses-Code/esnow-game-updates-bot.
+Это описание реализации, а не отчёт о доступности серверов сегодня. Версия на рабочем ПК может отличаться.
+
+1. ОБЩИЙ ПРИНЦИП
+
+Все сведения получаются онлайн. Бот не читает установленные игры, файлы или журналы лаунчеров на ПК администратора и не устанавливает обновления.
+В списке 122 записей: 104 классифицированы кодом как сборки/манифесты, 18 — как косвенные сигналы.
+Эта классификация не является гарантией достоверности: среди источников сборок есть сторонние зеркала.
+«Источник ответил» означает, что адаптер получил допустимую непустую строку. Это не доказывает актуальность источника или обновление нужного клиента.
+RED FLAG в текущем списке отсутствует.
+
+2. СПРАВОЧНИК АДАПТЕРОВ
+
+steam
+Источник: SteamCMD API — сторонний сервис данных Steam.
+Как извлекается сигнал: GET JSON: data[AppID].depots.branches.public.buildid. Проверяются числовой ненулевой buildid и отсутствие пароля; явно указанный статус релиза должен быть released. При отсутствии releasestate код предполагает released.
+Ограничения: Смена публичной сборки не обязательно означает загрузку на Windows; зеркало может запаздывать. Для другого магазина совпадение не гарантируется.
+
+steam_patch_news
+Источник: Официальная новостная лента Steam.
+Как извлекается сигнал: Из последних 100 новостей выбирается самая свежая по дате Community Announcements с подходящим заголовком патча. Будущие даты и типичные анонсы/тесты исключаются. Сигнал — gid публикации.
+Ограничения: Фильтр заголовков эвристический. Тихие исправления и необычные названия публикаций могут быть пропущены.
+
+battle
+Источник: Официальный сервер версий Battle.net, EU.
+Как извлекается сигнал: Таблица с разделителем |; выбирается Region=eu. Сигнал — VersionsName + ' / ' + BuildId.
+Ограничения: Проверяется EU, а не установленная версия игры.
+
+minecraft
+Источник: Официальный манифест Mojang.
+Как извлекается сигнал: JSON latest.release; дополнительно проверяется наличие этой версии с type=release в versions.
+Ограничения: Только Java Edition и стабильный выпуск; не Bedrock и не модпаки.
+
+albion
+Источник: Официальный манифест Albion Online.
+Как извлекается сигнал: XML: ./albiononline/win32/fullinstall, атрибут version.
+Ограничения: Проверяется fullinstall-версия Windows; не все серверные изменения требуют смены этого поля.
+
+roblox
+Источник: Официальный сервер версий Roblox.
+Как извлекается сигнал: WindowsPlayer, канал LIVE. Сигнал — version + ' / ' + clientVersionUpload.
+Ограничения: Не Roblox Studio; возможен поэтапный выпуск.
+
+osu
+Источник: Официальный сервис обновлений osu!.
+Как извлекается сигнал: Stable40: сортируются пары filename/file_hash, проверяется наличие osu!.exe. Сигнал — первые 16 hex-символов SHA-256 JSON списка.
+Ограничения: Изменение состава или хешей меняет сигнал. Ошибка сервера вместо списка отклоняется.
+
+fortnite_build
+Источник: Fortnite-API — сторонний источник метаданных сборки.
+Как извлекается сигнал: JSON data.build; допустим формат ++Fortnite+Release-<версия>-CL-<число>. Сохраняются версия и CL.
+Ограничения: Это не прямой авторизованный API Epic; возможна задержка зеркала. Остальные поля ответа, включая ключи, бот не использует.
+
+warface_news
+Источник: Официальные новости русской версии Warface.
+Как извлекается сигнал: HTML трёх страниц page=0,1,2. Выбираются ссылки /news/<id>.html с подходящим заголовком; берётся максимальный id. ПТС и типичные анонсы исключаются.
+Ограничения: Не манифест Astrum. Время публикации отдельно не проверяется; порядок основан на id. Просматриваются только три страницы.
+
+riot_lol
+Источник: Официальный Riot Data Dragon.
+Как извлекается сигнал: Первый элемент JSON списка версий, формат число.число.число.
+Ограничения: Версия ресурсов не подтверждает региональную сборку клиента. Из новости версия больше не вычисляется.
+
+riot_valorant
+Источник: Valorant-API — сторонний сервис.
+Как извлекается сигнал: JSON data.version.
+Ограничения: Не подтверждает региональную доступность Windows-клиента.
+
+lor_assets
+Источник: Официальный CDN ресурсов Legends of Runeterra.
+Как извлекается сигнал: HEAD для core, adventure, set1–set9; читаются ETag. SHA-256 объединённых через | ETag, первые 24 hex-символа.
+Ограничения: Это изменение ресурсов CDN, не манифест клиента. Новые наборы после set9 автоматически не добавляются.
+
+lesta_wiki
+Источник: Официальная Lesta Wiki.
+Как извлекается сигнал: MediaWiki API parse/wikitext. Регулярное выражение берёт первое подходящее обозначение версии после 'Обновление' или 'Версия'.
+Ограничения: Первое совпадение не гарантирует последнюю выпущенную версию; Wiki может запаздывать или описывать будущий выпуск.
+
+tarkov_arena_news
+Источник: Официальный сайт Escape from Tarkov: Arena.
+Как извлекается сигнал: HTML новостей; номера из заголовков вида Escape from Tarkov: Arena <версия> patch notes. Выбирается максимальная числовая версия.
+Ограничения: Дата и завершение установки патча на боевые серверы отдельно не проверяются.
+
+majestic_news
+Источник: Публичная страница официальных Telegram-публикаций Majestic.
+Как извлекается сигнал: HTML страницы majestic_gta5. Код ищет data-post с префиксом majestic/ и текстом 'Обновление:'. Сигнал — максимальный id публикации.
+Ограничения: Не подтверждает именно Enhanced-клиент; зависит от HTML и имени канала; дата и смысл текста отдельно не проверяются.
+
+genshin_news
+Источник: Официальные новости HoYoLAB.
+Как извлекается сигнал: GET JSON, gids=2, type=1, page_size=50. Из post.subject вида Version <номер> Update Details выбирается максимальная числовая версия.
+Ограничения: Не манифест HoYoPlay; дата и завершение выпуска отдельно не проверяются, мелкие исправления без смены номера могут быть пропущены.
+
+3. ПОЛНЫЙ СПИСОК ИГР И АДРЕСОВ
+
+1. Albion Online
+ID в базе: game-001
+Лаунчер: Albion Launcher
+Адаптер: albion
+Тип: сборка/манифест
+Адрес: https://live.albiononline.com/autoupdate/manifest.xml
+
+2. Warface
+ID в базе: game-002
+Лаунчер: Astrum Play
+Адаптер: warface_news
+Тип: косвенный сигнал
+Адрес: https://ru.warface.com/news/?page=0 (также page=1 и page=2)
+Оговорка для игры: Новости Warface RU; ПТС и анонсы исключаются. Полное покрытие исправлений не подтверждено.
+
+3. Hearthstone
+ID в базе: game-003
+Лаунчер: Battle.net
+Адаптер: battle
+Тип: сборка/манифест
+Адрес: https://eu.version.battle.net/v2/products/hsb/versions
+Продукт Battle.net: hsb; регион: eu
+
+4. Heroes of the Storm
+ID в базе: game-004
+Лаунчер: Battle.net
+Адаптер: battle
+Тип: сборка/манифест
+Адрес: https://eu.version.battle.net/v2/products/hero/versions
+Продукт Battle.net: hero; регион: eu
+
+5. Overwatch 2
+ID в базе: game-005
+Лаунчер: Battle.net
+Адаптер: battle
+Тип: сборка/манифест
+Адрес: https://eu.version.battle.net/v2/products/pro/versions
+Продукт Battle.net: pro; регион: eu
+
+6. StarCraft 2: Wings of Liberty
+ID в базе: game-006
+Лаунчер: Battle.net
+Адаптер: battle
+Тип: сборка/манифест
+Адрес: https://eu.version.battle.net/v2/products/s2/versions
+Продукт Battle.net: s2; регион: eu
+
+7. Escape from Tarkov
+ID в базе: game-007
+Лаунчер: BSG
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/3932890
+Steam AppID: 3932890
+Оговорка для игры: Сигнал Steam, а установлен BSG. Совпадение выпуска в этом лаунчере НЕ подтверждено.
+
+8. Escape from Tarkov Arena
+ID в базе: game-008
+Лаунчер: BSG
+Адаптер: tarkov_arena_news
+Тип: косвенный сигнал
+Адрес: https://arena.tarkov.com/news
+Оговорка для игры: Официальные патч-ноты: время установки на боевые серверы не подтверждается.
+
+9. Apex Legends
+ID в базе: game-009
+Лаунчер: EA App
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/1172470
+Steam AppID: 1172470
+Оговорка для игры: Сигнал Steam, а установлен EA App. Совпадение выпуска в этом лаунчере НЕ подтверждено.
+
+10. Fortnite
+ID в базе: game-010
+Лаунчер: Epic Games
+Адаптер: fortnite_build
+Тип: сборка/манифест
+Адрес: https://fortnite-api.com/v2/aes
+
+11. Rocket League
+ID в базе: game-011
+Лаунчер: Epic Games
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/252950
+Steam AppID: 252950
+Оговорка для игры: Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено.
+
+12. Sid Meier's Civilization 6
+ID в базе: game-012
+Лаунчер: Epic Games
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/289070
+Steam AppID: 289070
+Оговорка для игры: Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено.
+
+13. World War Z
+ID в базе: game-013
+Лаунчер: Epic Games
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/699130
+Steam AppID: 699130
+Оговорка для игры: Сигнал Steam, а установлен Epic Games. Совпадение выпуска в этом лаунчере НЕ подтверждено.
+
+14. Genshin Impact
+ID в базе: game-014
+Лаунчер: HoYoPlay
+Адаптер: genshin_news
+Тип: косвенный сигнал
+Адрес: https://bbs-api-os.hoyolab.com/community/post/wapi/getNewsList?gids=2&type=1&page_size=50
+Оговорка для игры: Официальные Update Details: не манифест HoYoPlay, возможна публикация до выпуска.
+
+15. Minecraft: Java Edition
+ID в базе: game-015
+Лаунчер: Legacy
+Адаптер: minecraft
+Тип: сборка/манифест
+Адрес: https://piston-meta.mojang.com/mc/game/version_manifest_v2.json
+
+16. Мир кораблей
+ID в базе: game-016
+Лаунчер: Lesta
+Адаптер: lesta_wiki
+Тип: косвенный сигнал
+Адрес: https://wiki.lesta.ru/api.php?action=parse&page=%D0%9C%D0%B8%D1%80_%D0%BA%D0%BE%D1%80%D0%B0%D0%B1%D0%BB%D0%B5%D0%B9%3A%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B9&prop=wikitext&format=json
+Страница Wiki: Мир_кораблей:Список_обновлений
+Оговорка для игры: Официальная Wiki: возможны задержки и описания будущих версий.
+
+17. Мир танков
+ID в базе: game-017
+Лаунчер: Lesta
+Адаптер: lesta_wiki
+Тип: косвенный сигнал
+Адрес: https://wiki.lesta.ru/api.php?action=parse&page=%D0%9C%D0%B8%D1%80_%D1%82%D0%B0%D0%BD%D0%BA%D0%BE%D0%B2%3A%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B9&prop=wikitext&format=json
+Страница Wiki: Мир_танков:Список_обновлений
+Оговорка для игры: Официальная Wiki: возможны задержки и описания будущих версий.
+
+18. Tanks Blitz
+ID в базе: game-018
+Лаунчер: Lesta
+Адаптер: lesta_wiki
+Тип: косвенный сигнал
+Адрес: https://wiki.lesta.ru/api.php?action=parse&page=Tanks_Blitz%3A%D0%A1%D0%BF%D0%B8%D1%81%D0%BE%D0%BA_%D0%BE%D0%B1%D0%BD%D0%BE%D0%B2%D0%BB%D0%B5%D0%BD%D0%B8%D0%B9&prop=wikitext&format=json
+Страница Wiki: Tanks_Blitz:Список_обновлений
+Оговорка для игры: Официальная Wiki: возможны задержки и описания будущих версий.
+
+19. MAJESTIC
+ID в базе: game-019
+Лаунчер: MAJESTIC
+Адаптер: majestic_news
+Тип: косвенный сигнал
+Адрес: https://t.me/s/majestic_gta5
+Оговорка для игры: Официальные новости: не подтверждают версию клиента Enhanced.
+
+20. OSU
+ID в базе: game-020
+Лаунчер: OSU
+Адаптер: osu
+Тип: сборка/манифест
+Адрес: https://osu.ppy.sh/web/check-updates.php?action=check&stream=stable40
+
+21. League of Legends
+ID в базе: game-021
+Лаунчер: Riot Client
+Адаптер: riot_lol
+Тип: косвенный сигнал
+Адрес: https://ddragon.leagueoflegends.com/api/versions.json
+Оговорка для игры: Riot Data Dragon: ресурсы, не региональная версия клиента; без подстановки версии из анонсов.
+
+22. Legends of Runeterra
+ID в базе: game-022
+Лаунчер: Riot Client
+Адаптер: lor_assets
+Тип: косвенный сигнал
+Адрес: https://dd.b.pvp.net/latest/{часть}-en_us.zip; часть: core, adventure, set1–set9
+Оговорка для игры: ETag ресурсов Riot: изменение CDN не гарантирует обновление клиента.
+
+23. Valorant
+ID в базе: game-023
+Лаунчер: Riot Client
+Адаптер: riot_valorant
+Тип: косвенный сигнал
+Адрес: https://valorant-api.com/v1/version
+Оговорка для игры: Сторонний Valorant-API: не подтверждает регион и Windows-манифест.
+
+24. Roblox
+ID в базе: game-024
+Лаунчер: Roblox
+Адаптер: roblox
+Тип: сборка/манифест
+Адрес: https://clientsettingscdn.roblox.com/v2/client-version/WindowsPlayer/channel/LIVE
+
+25. Arena Breakout: Infinite
+ID в базе: game-027
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2073620
+Steam AppID: 2073620
+
+26. Brawlhalla
+ID в базе: game-028
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/291550
+Steam AppID: 291550
+
+27. Call of Duty: Warzone 2
+ID в базе: game-029
+Лаунчер: Steam
+Адаптер: steam
+Тип: косвенный сигнал
+Адрес: https://api.steamcmd.net/v1/info/1938090
+Steam AppID: 1938090
+Оговорка для игры: Общий Steam AppID Call of Duty HQ: изменение сборки не обязательно относится к Warzone.
+
+28. Counter-Strike 2
+ID в базе: game-030
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/730
+Steam AppID: 730
+
+29. Crossout
+ID в базе: game-031
+Лаунчер: Steam
+Адаптер: steam_patch_news
+Тип: косвенный сигнал
+Адрес: https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=386180&count=100&maxlength=0
+Steam AppID: 386180
+Оговорка для игры: Официальные новости Steam с фильтром анонсов; сборки без новости могут быть пропущены.
+
+30. Deadlock
+ID в базе: game-032
+Лаунчер: Steam
+Адаптер: steam_patch_news
+Тип: косвенный сигнал
+Адрес: https://api.steampowered.com/ISteamNews/GetNewsForApp/v2/?appid=1422450&count=100&maxlength=0
+Steam AppID: 1422450
+Оговорка для игры: Официальные новости Steam с фильтром анонсов; сборки без новости могут быть пропущены.
+
+31. Deceit 2
+ID в базе: game-033
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2064870
+Steam AppID: 2064870
+
+32. Delta Force
+ID в базе: game-034
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2507950
+Steam AppID: 2507950
+
+33. Destiny 2
+ID в базе: game-035
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1085660
+Steam AppID: 1085660
+
+34. Dota 2
+ID в базе: game-036
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/570
+Steam AppID: 570
+
+35. NieR: Automata
+ID в базе: game-037
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/524220
+Steam AppID: 524220
+
+36. Palworld
+ID в базе: game-038
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1623730
+Steam AppID: 1623730
+
+37. PAYDAY 2
+ID в базе: game-039
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/218620
+Steam AppID: 218620
+
+38. Phasmophobia
+ID в базе: game-040
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/739630
+Steam AppID: 739630
+
+39. Rust
+ID в базе: game-041
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/252490
+Steam AppID: 252490
+
+40. Valheim
+ID в базе: game-042
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/892970
+Steam AppID: 892970
+
+41. Warhammer 40,000: Space Marine II
+ID в базе: game-043
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2183900
+Steam AppID: 2183900
+
+42. Gears of War E-Day
+ID в базе: game-045
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3010850
+Steam AppID: 3010850
+
+43. Portal 2
+ID в базе: game-046
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/620
+Steam AppID: 620
+
+44. Raft
+ID в базе: game-047
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/648800
+Steam AppID: 648800
+
+45. The Witcher 3: Wild Hunt
+ID в базе: game-048
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/292030
+Steam AppID: 292030
+
+46. A Way Out
+ID в базе: game-049
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1222700
+Steam AppID: 1222700
+
+47. Battlefield 1
+ID в базе: game-050
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1238840
+Steam AppID: 1238840
+
+48. Battlefield 2042
+ID в базе: game-051
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1517290
+Steam AppID: 1517290
+
+49. Battlefield 4
+ID в базе: game-052
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1238860
+Steam AppID: 1238860
+
+50. Battlefield 6
+ID в базе: game-053
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2807960
+Steam AppID: 2807960
+
+51. Battlefield V
+ID в базе: game-054
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1238810
+Steam AppID: 1238810
+
+52. Burnout Paradise Remastered
+ID в базе: game-055
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1238080
+Steam AppID: 1238080
+
+53. Command & Conquer: Red Alert 3
+ID в базе: game-056
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/17480
+Steam AppID: 17480
+
+54. Dead Space (2023)
+ID в базе: game-057
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1693980
+Steam AppID: 1693980
+
+55. DIRT 5
+ID в базе: game-058
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1038250
+Steam AppID: 1038250
+
+56. Dragon Age: Inquisition
+ID в базе: game-059
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1222690
+Steam AppID: 1222690
+
+57. EA SPORTS FC™ 26
+ID в базе: game-060
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3405690
+Steam AppID: 3405690
+
+58. GRID Legends
+ID в базе: game-061
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1307710
+Steam AppID: 1307710
+
+59. It Takes Two
+ID в базе: game-062
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1426210
+Steam AppID: 1426210
+
+60. Lost in Random
+ID в базе: game-063
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1462570
+Steam AppID: 1462570
+
+61. Mass Effect Legendary Edition
+ID в базе: game-064
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1328670
+Steam AppID: 1328670
+
+62. Mass Effect: Andromeda
+ID в базе: game-065
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1238000
+Steam AppID: 1238000
+
+63. Mirror's Edge Catalyst
+ID в базе: game-066
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1233570
+Steam AppID: 1233570
+
+64. Need for Speed: Heat
+ID в базе: game-067
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1222680
+Steam AppID: 1222680
+
+65. Need for Speed: Hot Pursuit Remastered
+ID в базе: game-068
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1328660
+Steam AppID: 1328660
+
+66. Need for Speed: Most Wanted (2012)
+ID в базе: game-069
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1262560
+Steam AppID: 1262560
+
+67. Need for Speed: Unbound
+ID в базе: game-070
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1846380
+Steam AppID: 1846380
+
+68. Star Wars Jedi: Fallen Order
+ID в базе: game-071
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1172380
+Steam AppID: 1172380
+
+69. Star Wars Jedi: Survivor
+ID в базе: game-072
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1774580
+Steam AppID: 1774580
+
+70. Star Wars: Battlefront II (2017)
+ID в базе: game-073
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1237950
+Steam AppID: 1237950
+
+71. Titanfall 2
+ID в базе: game-074
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1237970
+Steam AppID: 1237970
+
+72. Unravel
+ID в базе: game-075
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1225560
+Steam AppID: 1225560
+
+73. Unravel Two
+ID в базе: game-076
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1225570
+Steam AppID: 1225570
+
+74. 007 First Light
+ID в базе: game-077
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3768760
+Steam AppID: 3768760
+
+75. Abiotic Factor
+ID в базе: game-078
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/427410
+Steam AppID: 427410
+
+76. ARC Raiders
+ID в базе: game-079
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1808500
+Steam AppID: 1808500
+
+77. Assassin's Creed Odyssey
+ID в базе: game-080
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/812140
+Steam AppID: 812140
+
+78. Assassin's Creed Shadows
+ID в базе: game-081
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3159330
+Steam AppID: 3159330
+
+79. Assassin’s Creed Unity
+ID в базе: game-082
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/289650
+Steam AppID: 289650
+
+80. Assassin's Creed Valhalla
+ID в базе: game-083
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2208920
+Steam AppID: 2208920
+
+81. Backrooms: Escape Together
+ID в базе: game-084
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2141730
+Steam AppID: 2141730
+
+82. BeamNG.drive
+ID в базе: game-085
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/284160
+Steam AppID: 284160
+
+83. Bodycam
+ID в базе: game-086
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2406770
+Steam AppID: 2406770
+
+84. Buckshot Roulette
+ID в базе: game-087
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2835570
+Steam AppID: 2835570
+
+85. Chained Together
+ID в базе: game-088
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2567870
+Steam AppID: 2567870
+
+86. Clair Obscur: Expedition 33
+ID в базе: game-089
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1903340
+Steam AppID: 1903340
+
+87. Content Warning
+ID в базе: game-090
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2881650
+Steam AppID: 2881650
+
+88. Dying Light 2: Stay Human
+ID в базе: game-091
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/534380
+Steam AppID: 534380
+
+89. Elden Ring: Nightreign
+ID в базе: game-092
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2622380
+Steam AppID: 2622380
+
+90. Enshrouded
+ID в базе: game-093
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1203620
+Steam AppID: 1203620
+
+91. Euro Truck Simulator 2
+ID в базе: game-094
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/227300
+Steam AppID: 227300
+
+92. Factorio
+ID в базе: game-095
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/427520
+Steam AppID: 427520
+
+93. Garry's Mod
+ID в базе: game-096
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/4000
+Steam AppID: 4000
+
+94. Grounded
+ID в базе: game-097
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/962130
+Steam AppID: 962130
+
+95. Helldivers 2
+ID в базе: game-098
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/553850
+Steam AppID: 553850
+
+96. Heroes of Might and Magic: Olden Era
+ID в базе: game-099
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3105440
+Steam AppID: 3105440
+
+97. Hunt: Showdown 1896
+ID в базе: game-100
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/594650
+Steam AppID: 594650
+
+98. inZOI
+ID в базе: game-101
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/2456740
+Steam AppID: 2456740
+
+99. Machine Party
+ID в базе: game-102
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/4108000
+Steam AppID: 4108000
+
+100. MECCHA CHAMELEON
+ID в базе: game-103
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/4704690
+Steam AppID: 4704690
+
+101. Metro 2033 Redux
+ID в базе: game-104
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/286690
+Steam AppID: 286690
+
+102. Metro: Exodus
+ID в базе: game-105
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/412020
+Steam AppID: 412020
+
+103. Metro: Last Light Redux
+ID в базе: game-106
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/287390
+Steam AppID: 287390
+
+104. Peak
+ID в базе: game-107
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3527290
+Steam AppID: 3527290
+
+105. PRAGMATA
+ID в базе: game-108
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3357650
+Steam AppID: 3357650
+
+106. Project Zomboid
+ID в базе: game-109
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/108600
+Steam AppID: 108600
+
+107. Quarantine Zone: The Last Check
+ID в базе: game-110
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3419520
+Steam AppID: 3419520
+
+108. R.E.P.O.
+ID в базе: game-111
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3241660
+Steam AppID: 3241660
+
+109. Ready Or Not
+ID в базе: game-112
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1144200
+Steam AppID: 1144200
+
+110. RV There Yet?
+ID в базе: game-114
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3949040
+Steam AppID: 3949040
+
+111. Schedule I
+ID в базе: game-115
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3164500
+Steam AppID: 3164500
+
+112. Shift At Midnight
+ID в базе: game-116
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3722330
+Steam AppID: 3722330
+
+113. Sons Of The Forest
+ID в базе: game-117
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1326470
+Steam AppID: 1326470
+
+114. Squad
+ID в базе: game-118
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/393380
+Steam AppID: 393380
+
+115. Stray
+ID в базе: game-119
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1332010
+Steam AppID: 1332010
+
+116. Subnautica
+ID в базе: game-120
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/264710
+Steam AppID: 264710
+
+117. Subnautica 2
+ID в базе: game-121
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1962700
+Steam AppID: 1962700
+
+118. Terraria
+ID в базе: game-122
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/105600
+Steam AppID: 105600
+
+119. The Forest
+ID в базе: game-123
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/242760
+Steam AppID: 242760
+
+120. WARDOGS
+ID в базе: game-124
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/1867240
+Steam AppID: 1867240
+
+121. YAPYAP
+ID в базе: game-125
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/3834090
+Steam AppID: 3834090
+
+122. PUBG
+ID в базе: game-126
+Лаунчер: Steam
+Адаптер: steam
+Тип: сборка/манифест
+Адрес: https://api.steamcmd.net/v1/info/578080
+Steam AppID: 578080
+
+4. ГРАНИЦЫ ПОКРЫТИЯ
+
+Steam-сигналы для EA App, Epic Games и BSG не доказывают одновременный выпуск в этих лаунчерах.
+Call of Duty использует общий AppID HQ, поэтому не каждое изменение относится именно к Warzone.
+Новости не покрывают все тихие исправления. Отсутствие новости не равнозначно отсутствию обновления.
+Steam public — публичная ветка, а не универсальная гарантия статуса Stable у издателя или изменения только Windows-файлов.
+Размер загрузки, необходимость установки на конкретном ПК и состояние игровых серверов эта реализация не определяет.
+Для текущих ошибок используются /sources и CHECK-SOURCES.cmd. Для расписания, базы и доставки см. второй файл.
