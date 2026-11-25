@@ -106,7 +106,7 @@ class Monitoring(unittest.TestCase):
         api = Mock()
         monitoring.test_delivery(self.db, self.config, 1, 123, api)
         api.assert_called_once()
-        self.assertIn('Это не обновление', api.call_args.args[2]['text'])
+        self.assertEqual('тест', api.call_args.args[2]['text'])
 
     def test_old_history_does_not_invent_timestamps(self):
         with self.db:
