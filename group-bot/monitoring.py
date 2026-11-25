@@ -82,7 +82,7 @@ def test_delivery(db, config, update_id, target, api):
         with db:
             db.execute('INSERT INTO delivery_tests VALUES (?,?,?,NULL)', (update_id, target, 'unknown'))
         try:
-            api(config, 'sendMessage', {'chat_id': target, 'text': '🧪 Тест ESnow. Проверка доставки уведомлений. Это не обновление игры.'})
+            api(config, 'sendMessage', {'chat_id': target, 'text': 'тест'})
             outcome, error = 'sent', None
         except Exception as exc:
             outcome, error = 'failed', type(exc).__name__
